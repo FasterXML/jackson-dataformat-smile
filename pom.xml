@@ -130,6 +130,11 @@
               <Bundle-Vendor>fasterml.com</Bundle-Vendor>
               <Import-Package>
 org.codehaus.jackson
+,org.codehaus.jackson.format
+,org.codehaus.jackson.impl
+,org.codehaus.jackson.io
+,org.codehaus.jackson.sym
+,org.codehaus.jackson.util
 </Import-Package>
               <Private-Package>
 </Private-Package>
