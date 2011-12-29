@@ -1,7 +1,5 @@
 package com.fasterxml.jackson.dataformat.smile;
 
-import static com.fasterxml.jackson.dataformat.smile.SmileConstants.BYTE_MARKER_END_OF_STRING;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -15,7 +13,8 @@ import com.fasterxml.jackson.core.base.ParserBase;
 import com.fasterxml.jackson.core.io.IOContext;
 import com.fasterxml.jackson.core.sym.BytesToNameCanonicalizer;
 import com.fasterxml.jackson.core.sym.Name;
-import com.fasterxml.jackson.core.util.VersionUtil;
+
+import static com.fasterxml.jackson.dataformat.smile.SmileConstants.BYTE_MARKER_END_OF_STRING;
 
 public class SmileParser
     extends ParserBase
@@ -315,7 +314,7 @@ public class SmileParser
 
     @Override
     public Version version() {
-        return VersionUtil.versionFor(getClass());
+        return ModuleVersion.instance.version();
     }
     
     /*

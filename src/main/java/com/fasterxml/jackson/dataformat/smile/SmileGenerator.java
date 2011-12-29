@@ -393,6 +393,17 @@ public class SmileGenerator
         }
         return br;
     }
+
+    /*                                                                                       
+    /**********************************************************                              
+    /* Versioned                                                                             
+    /**********************************************************                              
+     */
+
+    @Override
+    public Version version() {
+        return ModuleVersion.instance.version();
+    }
     
     /*
     /**********************************************************

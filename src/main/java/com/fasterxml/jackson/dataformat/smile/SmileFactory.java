@@ -7,7 +7,6 @@ import com.fasterxml.jackson.core.*;
 import com.fasterxml.jackson.core.format.InputAccessor;
 import com.fasterxml.jackson.core.format.MatchStrength;
 import com.fasterxml.jackson.core.io.IOContext;
-import com.fasterxml.jackson.core.util.VersionUtil;
 
 /**
  * Factory used for constructing {@link SmileParser} and {@link SmileGenerator}
@@ -96,7 +95,7 @@ public class SmileFactory extends JsonFactory
 
     @Override
     public Version version() {
-        return VersionUtil.versionFor(getClass());
+        return ModuleVersion.instance.version();
     }
     
     /*
