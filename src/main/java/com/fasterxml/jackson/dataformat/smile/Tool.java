@@ -2,7 +2,7 @@ package com.fasterxml.jackson.dataformat.smile;
 
 import java.io.*;
 
-import org.codehaus.jackson.*;
+import com.fasterxml.jackson.core.*;
 
 import com.fasterxml.jackson.dataformat.smile.SmileFactory;
 
@@ -12,8 +12,6 @@ import com.fasterxml.jackson.dataformat.smile.SmileFactory;
  * option of either "-e" (encode) or "-d" (decode).
  * 
  * @author tatu
- *
- * @since 1.6.2
  */
 public class Tool
 {

@@ -3,9 +3,9 @@ package com.fasterxml.jackson.dataformat.smile;
 import java.io.*;
 import java.util.*;
 
-import org.codehaus.jackson.*;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.sym.BytesToNameCanonicalizer;
+import com.fasterxml.jackson.core.*;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.sym.BytesToNameCanonicalizer;
 
 import com.fasterxml.jackson.dataformat.smile.SmileFactory;
 import com.fasterxml.jackson.dataformat.smile.SmileGenerator;

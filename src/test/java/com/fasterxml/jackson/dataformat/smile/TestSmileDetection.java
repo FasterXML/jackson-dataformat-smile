@@ -2,10 +2,10 @@ package com.fasterxml.jackson.dataformat.smile;
 
 import java.io.*;
 
-import org.codehaus.jackson.*;
-import org.codehaus.jackson.format.DataFormatDetector;
-import org.codehaus.jackson.format.DataFormatMatcher;
-import org.codehaus.jackson.format.MatchStrength;
+import com.fasterxml.jackson.core.*;
+import com.fasterxml.jackson.core.format.DataFormatDetector;
+import com.fasterxml.jackson.core.format.DataFormatMatcher;
+import com.fasterxml.jackson.core.format.MatchStrength;
 
 import com.fasterxml.jackson.dataformat.smile.SmileFactory;
 import com.fasterxml.jackson.dataformat.smile.SmileParser;

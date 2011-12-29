@@ -1,6 +1,6 @@
 package com.fasterxml.jackson.dataformat.smile;
 
-import org.codehaus.jackson.map.*;
+import com.fasterxml.jackson.databind.*;
 
 import com.fasterxml.jackson.dataformat.smile.SmileFactory;
 

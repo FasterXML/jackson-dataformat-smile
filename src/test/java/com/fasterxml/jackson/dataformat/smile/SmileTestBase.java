@@ -6,7 +6,7 @@ import java.util.Arrays;
 
 import org.junit.Assert;
 
-import org.codehaus.jackson.*;
+import com.fasterxml.jackson.core.*;
 
 import com.fasterxml.jackson.dataformat.smile.SmileFactory;
 import com.fasterxml.jackson.dataformat.smile.SmileGenerator;

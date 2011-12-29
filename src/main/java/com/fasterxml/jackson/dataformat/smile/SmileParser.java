@@ -10,14 +10,14 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Arrays;
 
-import org.codehaus.jackson.*;
-import org.codehaus.jackson.impl.JsonParserBase;
-import org.codehaus.jackson.io.IOContext;
-import org.codehaus.jackson.sym.BytesToNameCanonicalizer;
-import org.codehaus.jackson.sym.Name;
+import com.fasterxml.jackson.core.*;
+import com.fasterxml.jackson.core.base.ParserBase;
+import com.fasterxml.jackson.core.io.IOContext;
+import com.fasterxml.jackson.core.sym.BytesToNameCanonicalizer;
+import com.fasterxml.jackson.core.sym.Name;
 
 public class SmileParser
-    extends JsonParserBase
+    extends ParserBase
 {
     /**
      * Enumeration that defines all togglable features for Smile generators.

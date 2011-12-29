@@ -3,14 +3,12 @@ package com.fasterxml.jackson.dataformat.smile;
 import java.io.*;
 import java.util.*;
 
-import org.codehaus.jackson.*;
+import com.fasterxml.jackson.core.*;
 
 import com.fasterxml.jackson.dataformat.smile.SmileFactory;
 
 /* Test based on kimchy's issue (see https://gist.github.com/853232);
  * exhibits an issue with buffer recycling.
- * 
- * @since 1.8
  */
 public class TestSmileGeneratorBufferRecycle extends SmileTestBase
 {

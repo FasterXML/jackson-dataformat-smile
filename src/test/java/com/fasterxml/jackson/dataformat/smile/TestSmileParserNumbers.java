@@ -4,8 +4,7 @@ import java.io.*;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 
-import org.codehaus.jackson.JsonParser;
-import org.codehaus.jackson.JsonToken;
+import com.fasterxml.jackson.core.*;
 
 import com.fasterxml.jackson.dataformat.smile.SmileGenerator;
 import com.fasterxml.jackson.dataformat.smile.SmileParser;

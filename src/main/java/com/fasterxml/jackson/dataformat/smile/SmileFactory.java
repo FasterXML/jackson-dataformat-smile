@@ -3,10 +3,10 @@ package com.fasterxml.jackson.dataformat.smile;
 import java.io.*;
 import java.net.URL;
 
-import org.codehaus.jackson.*;
-import org.codehaus.jackson.format.InputAccessor;
-import org.codehaus.jackson.format.MatchStrength;
-import org.codehaus.jackson.io.IOContext;
+import com.fasterxml.jackson.core.*;
+import com.fasterxml.jackson.core.format.InputAccessor;
+import com.fasterxml.jackson.core.format.MatchStrength;
+import com.fasterxml.jackson.core.io.IOContext;
 
 /**
  * Factory used for constructing {@link SmileParser} and {@link SmileGenerator}

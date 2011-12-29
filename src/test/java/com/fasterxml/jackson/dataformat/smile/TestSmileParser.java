@@ -2,9 +2,7 @@ package com.fasterxml.jackson.dataformat.smile;
 
 import java.io.*;
 
-import org.codehaus.jackson.JsonGenerator;
-import org.codehaus.jackson.JsonParser;
-import org.codehaus.jackson.JsonToken;
+import com.fasterxml.jackson.core.*;
 
 import com.fasterxml.jackson.dataformat.smile.SmileConstants;
 import com.fasterxml.jackson.dataformat.smile.SmileFactory;

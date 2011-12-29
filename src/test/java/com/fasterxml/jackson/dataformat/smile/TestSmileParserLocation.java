@@ -2,9 +2,7 @@ package com.fasterxml.jackson.dataformat.smile;
 
 import java.io.IOException;
 
-import org.codehaus.jackson.JsonLocation;
-import org.codehaus.jackson.JsonParser;
-import org.codehaus.jackson.JsonToken;
+import com.fasterxml.jackson.core.*;
 
 public class TestSmileParserLocation
     extends SmileTestBase

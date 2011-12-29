@@ -8,7 +8,7 @@
   <groupId>com.fasterxml.jackson</groupId>
   <artifactId>jackson-dataformat-smile</artifactId>
   <name>Jackson-dataformat-Smile</name>
-  <version>1.9.2-SNAPSHOT</version>
+  <version>2.0.0-SNAPSHOT</version>
   <packaging>bundle</packaging>
   <description>Support for reading and writing Smile ("binary JSON") encoded data using Jackson abstractions (streaming API, data binding, tree model)
   </description>
@@ -49,9 +49,9 @@
   <dependencies>
     <!-- Extends Jackson core -->
     <dependency>
-      <groupId>org.codehaus.jackson</groupId>
-      <artifactId>jackson-core-asl</artifactId>
-      <version>1.9.2</version>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-core</artifactId>
+      <version>2.0.0-SNAPSHOT</version>
     </dependency>
 
      <!-- and for testing, JUnit (or TestNG?) is needed -->
@@ -63,9 +63,9 @@
     </dependency>
     <!-- and tests also use data-binding -->
     <dependency>
-      <groupId>org.codehaus.jackson</groupId>
-      <artifactId>jackson-mapper-asl</artifactId>
-      <version>1.9.2</version>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>2.0.0-SNAPSHOT</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -129,19 +129,20 @@
         <plugin>
           <groupId>org.apache.felix</groupId>
           <artifactId>maven-bundle-plugin</artifactId>
-          <version>2.3.4</version>
+          <version>2.3.6</version>
           <extensions>true</extensions>
           <configuration>
             <instructions>
               <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
               <Bundle-Vendor>fasterml.com</Bundle-Vendor>
               <Import-Package>
-org.codehaus.jackson
-,org.codehaus.jackson.format
-,org.codehaus.jackson.impl
-,org.codehaus.jackson.io
-,org.codehaus.jackson.sym
-,org.codehaus.jackson.util
+com.fasterxml.jackson.core
+,com.fasterxml.jackson.core.base
+,com.fasterxml.jackson.core.format
+,com.fasterxml.jackson.core.io
+,com.fasterxml.jackson.core.json
+,com.fasterxml.jackson.core.sym
+,com.fasterxml.jackson.core.util
 </Import-Package>
               <Private-Package>
 </Private-Package>

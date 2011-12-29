@@ -3,7 +3,7 @@ package com.fasterxml.jackson.dataformat.smile;
 import java.io.*;
 import java.util.*;
 
-import org.codehaus.jackson.*;
+import com.fasterxml.jackson.core.*;
 
 import com.fasterxml.jackson.dataformat.smile.SmileFactory;
 import com.fasterxml.jackson.dataformat.smile.SmileGenerator;

@@ -4,7 +4,7 @@ import java.io.*;
 
 import static org.junit.Assert.*;
 
-import org.codehaus.jackson.JsonToken;
+import com.fasterxml.jackson.core.JsonToken;
 
 import com.fasterxml.jackson.dataformat.smile.SmileFactory;
 import com.fasterxml.jackson.dataformat.smile.SmileGenerator;

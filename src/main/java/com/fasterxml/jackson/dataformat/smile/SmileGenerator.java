@@ -6,11 +6,10 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Arrays;
 
-import org.codehaus.jackson.*;
-import org.codehaus.jackson.io.IOContext;
-import org.codehaus.jackson.io.SerializedString;
-import org.codehaus.jackson.impl.JsonGeneratorBase;
-import org.codehaus.jackson.impl.JsonWriteContext;
+import com.fasterxml.jackson.core.*;
+import com.fasterxml.jackson.core.io.*;
+import com.fasterxml.jackson.core.json.JsonWriteContext;
+import com.fasterxml.jackson.core.base.GeneratorBase;
 
 import static com.fasterxml.jackson.dataformat.smile.SmileConstants.*;
 
@@ -20,7 +19,7 @@ import static com.fasterxml.jackson.dataformat.smile.SmileConstants.*;
  * @author tatu
  */
 public class SmileGenerator
-    extends JsonGeneratorBase
+    extends GeneratorBase
 {
     /**
      * Enumeration that defines all togglable features for Smile generators.
@@ -432,7 +431,7 @@ public class SmileGenerator
     /* Overridden methods, write methods
     /**********************************************************
      */
-    
+
     /* And then methods overridden to make final, streamline some
      * aspects...
      */
