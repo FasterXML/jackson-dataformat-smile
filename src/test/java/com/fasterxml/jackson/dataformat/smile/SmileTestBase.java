@@ -7,6 +7,7 @@ import java.util.Arrays;
 import org.junit.Assert;
 
 import com.fasterxml.jackson.core.*;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import com.fasterxml.jackson.dataformat.smile.SmileFactory;
 import com.fasterxml.jackson.dataformat.smile.SmileGenerator;
@@ -64,10 +65,23 @@ abstract class SmileTestBase
     {
         return f.createJsonParser(input);
     }
+
+    protected ObjectMapper smileMapper() {
+        return smileMapper(false);
+    }
+    
+    protected ObjectMapper smileMapper(boolean requireHeader) {
+        return smileMapper(requireHeader, false, false);
+    }
+    
+    protected ObjectMapper smileMapper(boolean requireHeader,
+            boolean writeHeader, boolean writeEndMarker)
+    {
+        return new ObjectMapper(smileFactory(requireHeader, writeHeader, writeEndMarker));
+    }
     
     protected SmileFactory smileFactory(boolean requireHeader,
             boolean writeHeader, boolean writeEndMarker)
-        throws IOException
     {
         SmileFactory f = new SmileFactory();
         f.configure(SmileParser.Feature.REQUIRE_HEADER, requireHeader);
