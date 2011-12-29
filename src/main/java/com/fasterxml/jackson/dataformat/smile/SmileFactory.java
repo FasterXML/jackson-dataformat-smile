@@ -7,6 +7,7 @@ import com.fasterxml.jackson.core.*;
 import com.fasterxml.jackson.core.format.InputAccessor;
 import com.fasterxml.jackson.core.format.MatchStrength;
 import com.fasterxml.jackson.core.io.IOContext;
+import com.fasterxml.jackson.core.util.VersionUtil;
 
 /**
  * Factory used for constructing {@link SmileParser} and {@link SmileGenerator}
@@ -23,8 +24,6 @@ import com.fasterxml.jackson.core.io.IOContext;
  * generator).
  * 
  * @author tatu
- * 
- * @since 1.6
  */
 public class SmileFactory extends JsonFactory
 {
@@ -89,6 +88,17 @@ public class SmileFactory extends JsonFactory
         _cfgDelegateToTextual = state;
     }
 
+    /*                                                                                       
+    /**********************************************************                              
+    /* Versioned                                                                             
+    /**********************************************************                              
+     */
+
+    @Override
+    public Version version() {
+        return VersionUtil.versionFor(getClass());
+    }
+    
     /*
     /**********************************************************
     /* Format detection functionality (since 1.8)

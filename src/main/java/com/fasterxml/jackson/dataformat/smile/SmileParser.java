@@ -15,6 +15,7 @@ import com.fasterxml.jackson.core.base.ParserBase;
 import com.fasterxml.jackson.core.io.IOContext;
 import com.fasterxml.jackson.core.sym.BytesToNameCanonicalizer;
 import com.fasterxml.jackson.core.sym.Name;
+import com.fasterxml.jackson.core.util.VersionUtil;
 
 public class SmileParser
     extends ParserBase
@@ -294,9 +295,6 @@ public class SmileParser
         return true;
     }
 
-    /**
-     * @since 1.7
-     */
     protected final static SmileBufferRecycler<String> _smileBufferRecycler()
     {
         SoftReference<SmileBufferRecycler<String>> ref = _smileRecyclerRef.get();
@@ -309,6 +307,17 @@ public class SmileParser
         return br;
     }
 
+    /*                                                                                       
+    /**********************************************************                              
+    /* Versioned                                                                             
+    /**********************************************************                              
+     */
+
+    @Override
+    public Version version() {
+        return VersionUtil.versionFor(getClass());
+    }
+    
     /*
     /**********************************************************
     /* Former StreamBasedParserBase methods

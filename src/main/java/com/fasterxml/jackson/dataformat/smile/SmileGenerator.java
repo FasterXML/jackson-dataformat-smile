@@ -179,8 +179,6 @@ public class SmileGenerator
     /**
      * Helper object used for low-level recycling of Smile-generator
      * specific buffers.
-     * 
-     * @since 1.7
      */
     final protected SmileBufferRecycler<SharedStringNode> _smileBufferRecycler;
     
