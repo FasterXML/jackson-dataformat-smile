@@ -5,16 +5,16 @@ It extends standard Jackson streaming API (`JsonFactory`, `JsonParser`, `JsonGen
 
 ## Status
 
-Module is fully usable.
+Module is fully usable, but depends on Jackson 2.0; older 1.x version is still available via Codehaus, and Jackson 1.x Download page.
 
 ## Maven dependency
 
 To use this extension on Maven-based projects, use following dependency:
 
     <dependency>
-      <groupId>com.fasterxml.jackson</groupId>
+      <groupId>com.fasterxml.jackson.dataformat</groupId>
       <artifactId>jackson-dataformat-smile</artifactId>
-      <version>1.9.2</version>
+      <version>2.0.0-SNAPSHOT</version>
     </dependency>
 
 (or whatever version is most up-to-date at the moment)
