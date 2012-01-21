@@ -93,11 +93,11 @@ public class SmileParserBootstrapper
     }
 
     public SmileParser constructParser(int generalParserFeatures, int smileFeatures,
-    		ObjectCodec codec, BytesToNameCanonicalizer rootByteSymbols)
+            boolean internNames,
+            ObjectCodec codec, BytesToNameCanonicalizer rootByteSymbols)
         throws IOException, JsonParseException
     {
-        boolean intern = JsonParser.Feature.INTERN_FIELD_NAMES.enabledIn(generalParserFeatures);
-        BytesToNameCanonicalizer can = rootByteSymbols.makeChild(true, intern);
+        BytesToNameCanonicalizer can = rootByteSymbols.makeChild(true, internNames);
     	// We just need a single byte, really, to know if it starts with header
     	ensureLoaded(1);
         SmileParser p =  new SmileParser(_context, generalParserFeatures, smileFeatures,

@@ -1204,19 +1204,6 @@ public class SmileParser
         if (_currToken == JsonToken.VALUE_EMBEDDED_OBJECT ) {
             return _binaryValue;
         }
-        return super.getEmbeddedObject();
-    }
-    
-    
-    /* NOTE: must still implement just because 1.9.0 - 1.9.2 did require
-     * its implementation (and we'll try to avoid introducing binary
-     * incompatibilities); however, should be deleted from 2.0
-     */
-    protected byte[] _decodeBase64(Base64Variant b64variant)
-        throws IOException, JsonParseException
-    {
-        // Should never get called, but must be defined for base class
-        _throwInternal();
         return null;
     }
     

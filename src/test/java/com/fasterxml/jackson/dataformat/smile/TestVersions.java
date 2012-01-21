@@ -16,7 +16,7 @@ public class TestVersions extends SmileTestBase
     private final static int MAJOR_VERSION = 2;
     private final static int MINOR_VERSION = 0;
 
-    private final static String GROUP_ID = "com.fasterxml.jackson";
+    private final static String GROUP_ID = "com.fasterxml.jackson.dataformat";
     private final static String ARTIFACT_ID = "jackson-dataformat-smile";
     
     public void testMapperVersions() throws IOException

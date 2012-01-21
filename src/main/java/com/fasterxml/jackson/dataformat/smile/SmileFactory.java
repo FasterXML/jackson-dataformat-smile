@@ -301,7 +301,8 @@ public class SmileFactory extends JsonFactory
         throws IOException, JsonParseException
     {
         return new SmileParserBootstrapper(ctxt, in).constructParser(_parserFeatures,
-        		_smileParserFeatures, _objectCodec, _rootByteSymbols);
+        		_smileParserFeatures, isEnabled(JsonFactory.Feature.INTERN_FIELD_NAMES),
+        		_objectCodec, _rootByteSymbols);
     }
 
     /**
@@ -326,8 +327,10 @@ public class SmileFactory extends JsonFactory
     protected SmileParser _createJsonParser(byte[] data, int offset, int len, IOContext ctxt)
         throws IOException, JsonParseException
     {
-        return new SmileParserBootstrapper(ctxt, data, offset, len).constructParser(_parserFeatures,
-        		_smileParserFeatures, _objectCodec, _rootByteSymbols);
+        return new SmileParserBootstrapper(ctxt, data, offset, len).constructParser(
+                _parserFeatures, _smileParserFeatures,
+                isEnabled(JsonFactory.Feature.INTERN_FIELD_NAMES),
+                _objectCodec, _rootByteSymbols);
     }
 
     /**
