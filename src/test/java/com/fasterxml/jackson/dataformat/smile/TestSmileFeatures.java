@@ -26,7 +26,7 @@ public class TestSmileFeatures
     public void testIndent() throws Exception
     {
         ObjectMapper mapper = new ObjectMapper(new SmileFactory());
-        mapper.configure(SerializationConfig.Feature.INDENT_OUTPUT, true);
+        mapper.configure(SerializationFeature.INDENT_OUTPUT, true);
         Bean bean = new Bean();
         bean.value = 42;
         
