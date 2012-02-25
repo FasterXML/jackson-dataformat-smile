@@ -348,9 +348,10 @@ public class SmileParser
     @Override
     public JsonLocation getTokenLocation()
     {
+        // token location is correctly managed...
         return new JsonLocation(_ioContext.getSourceReference(),
                 _tokenInputTotal, // bytes
-                -1, -1, -1); // char offset, line, column
+                -1, -1, (int) _tokenInputTotal); // char offset, line, column
     }   
 
     /**
@@ -360,9 +361,10 @@ public class SmileParser
     @Override
     public JsonLocation getCurrentLocation()
     {
+        final long offset = _currInputProcessed + _inputPtr;
         return new JsonLocation(_ioContext.getSourceReference(),
-                _currInputProcessed + _inputPtr, // bytes
-                -1, -1, -1); // char offset, line, column
+                offset, // bytes
+                -1, -1, (int) offset); // char offset, line, column
     }
 
     /*

@@ -1,7 +1,10 @@
 package com.fasterxml.jackson.dataformat.smile;
 
 import java.io.*;
+import java.util.HashMap;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.smile.SmileConstants;
 import com.fasterxml.jackson.dataformat.smile.SmileFactory;
 import com.fasterxml.jackson.dataformat.smile.SmileGenerator;
@@ -176,7 +179,31 @@ public class TestSmileGenerator
             fail("Expected shared String length to be < "+BASE_LEN+", was "+data.length);
         }
     }
-    
+
+    public void testWithMap() throws Exception
+    {
+        final SmileFactory smileFactory = new SmileFactory();
+        smileFactory.disable(SmileGenerator.Feature.WRITE_HEADER);
+        smileFactory.disable(SmileParser.Feature.REQUIRE_HEADER);
+        final ObjectMapper smileObjectMapper = new ObjectMapper(smileFactory);
+        final HashMap<String, String> data = new HashMap<String,String>();
+        data.put("key", "value");
+        final ByteArrayOutputStream out = new ByteArrayOutputStream();
+        final SmileGenerator smileGenerator = smileFactory.createJsonGenerator(out);
+        // NOTE: not optimal way -- should use "gen.writeStartArray()" -- but exposed a problem
+        out.write(SmileConstants.TOKEN_LITERAL_START_ARRAY);
+        smileObjectMapper.writeValue(smileGenerator, data);
+        smileGenerator.flush();
+        // as above, should use generator
+        out.write(SmileConstants.TOKEN_LITERAL_END_ARRAY);
+        smileGenerator.close();
+        byte[] doc = out.toByteArray();
+        JsonNode root = smileObjectMapper.readTree(doc);
+        assertNotNull(root);
+        assertTrue(root.isArray());
+        assertEquals(1, root.size());
+    }
+
     /*
     /**********************************************************
     /* Helper methods
