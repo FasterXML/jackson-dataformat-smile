@@ -1544,7 +1544,7 @@ public class SmileParser
         }
         return _symbols.addName(baseName, quads, quadLen);
     }
-    
+
     private final void _handleLongFieldName() throws IOException, JsonParseException
     {
         // First: gather quads we need, looking for end marker
@@ -1554,24 +1554,36 @@ public class SmileParser
         int q = 0;
 
         while (true) {
+            if (_inputPtr >= _inputEnd) {
+                loadMoreGuaranteed();
+            }
             byte b = inBuf[_inputPtr++];
             if (BYTE_MARKER_END_OF_STRING == b) {
                 bytes = 0;
                 break;
             }
             q = ((int) b) & 0xFF;
+            if (_inputPtr >= _inputEnd) {
+                loadMoreGuaranteed();
+            }
             b = inBuf[_inputPtr++];
             if (BYTE_MARKER_END_OF_STRING == b) {
                 bytes = 1;
                 break;
             }
             q = (q << 8) | (b & 0xFF);
+            if (_inputPtr >= _inputEnd) {
+                loadMoreGuaranteed();
+            }
             b = inBuf[_inputPtr++];
             if (BYTE_MARKER_END_OF_STRING == b) {
                 bytes = 2;
                 break;
             }
             q = (q << 8) | (b & 0xFF);
+            if (_inputPtr >= _inputEnd) {
+                loadMoreGuaranteed();
+            }
             b = inBuf[_inputPtr++];
             if (BYTE_MARKER_END_OF_STRING == b) {
                 bytes = 3;
@@ -1620,8 +1632,8 @@ public class SmileParser
         if ((_inputEnd - _inputPtr) < len) {
             _loadToHaveAtLeast(len);
         }
-	// First: maybe we already have this name decoded?
-	if (len < 5) {
+        // First: maybe we already have this name decoded?
+        if (len < 5) {
 	    int inPtr = _inputPtr;
 	    final byte[] inBuf = _inputBuffer;
 	    int q = inBuf[inPtr] & 0xFF;
@@ -1636,7 +1648,7 @@ public class SmileParser
 	    }
 	    _quad1 = q;
 	    return _symbols.findName(q);
-	}
+        }
         if (len < 9) {
             int inPtr = _inputPtr;
             final byte[] inBuf = _inputBuffer;
@@ -1889,7 +1901,7 @@ public class SmileParser
     }
 
     private final void _finishBigInteger()
-	throws IOException, JsonParseException
+        throws IOException, JsonParseException
     {
         byte[] raw = _read7BitBinaryWithLength();
         _numberBigInt = new BigInteger(raw);
@@ -1900,7 +1912,7 @@ public class SmileParser
         throws IOException, JsonParseException
     {
         // just need 5 bytes to get int32 first; all are unsigned
-	int i = _fourBytesToInt();
+    	int i = _fourBytesToInt();
     	if (_inputPtr >= _inputEnd) {
     		loadMoreGuaranteed();
     	}

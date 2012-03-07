@@ -2,6 +2,7 @@ package com.fasterxml.jackson.dataformat.smile;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Arrays;
 
 import org.junit.Assert;
@@ -54,18 +55,30 @@ abstract class SmileTestBase
         return _smileParser(input, false);
     }
 
+    protected SmileParser _smileParser(InputStream in) throws IOException {
+        return _smileParser(in, false);
+    }
+    
     protected SmileParser _smileParser(byte[] input, boolean requireHeader) throws IOException
     {
         SmileFactory f = smileFactory(requireHeader, false, false);
     	return _smileParser(f, input);
     }
 
-    protected SmileParser _smileParser(SmileFactory f, byte[] input)
-        throws IOException
+    protected SmileParser _smileParser(InputStream in, boolean requireHeader) throws IOException
     {
+        SmileFactory f = smileFactory(requireHeader, false, false);
+    	return _smileParser(f, in);
+    }
+    
+    protected SmileParser _smileParser(SmileFactory f, byte[] input) throws IOException {
         return f.createJsonParser(input);
     }
 
+    protected SmileParser _smileParser(SmileFactory f, InputStream in) throws IOException {
+        return f.createJsonParser(in);
+    }
+    
     protected ObjectMapper smileMapper() {
         return smileMapper(false);
     }
