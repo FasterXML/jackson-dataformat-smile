@@ -1,15 +1,22 @@
-Version: 2.0.1
+Version: 2.0.2
 
 Release date:
-  23-Apr-2012
+  xx-May-2012
 
 Description:
-  First patch release for 2.0.0.
-  No new features; re-compiled to require 2.0.1, to help JDK 1.5 compliancy.
+  Second patch release for 2.0.0.
+
+* [Issue-2]: SmileParser failed to decode surrogate-pair characters for
+    long Strings
+  (reported by Steven S)
 
 ------------------------------------------------------------------------
 === History: ===
 ------------------------------------------------------------------------
+
+2.0.1 [23-Apr-2012]:
+
+No new features; re-compiled to require 2.0.1, to help JDK 1.5 compliancy.
 
 2.0.0 [25-Mar-2012]:
 

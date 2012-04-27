@@ -1,0 +1,11 @@
+Here are people who have contributed to Smile decoded plug-in development
+(version 2.0 onwards)
+(version numbers in brackets indicate release in which the problem was fixed)
+
+Tatu Saloranta, tatu.saloranta@iki.fi: author
+
+Steven Schlansker:
+
+  * Reported [Issue-2]: SmileParser failed to properly decoded surrogate-pair
+    characters for long strings
+   (2.0.2)
