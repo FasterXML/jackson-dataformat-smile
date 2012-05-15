@@ -119,6 +119,7 @@
                     <maxmemory>512m</maxmemory>
                     <links>
                         <link>http://docs.oracle.com/javase/6/docs/api/</link>
+                        <link>http://fasterxml.github.com/jackson-core/javadoc/2.0.2/</link>
                     </links>
                 </configuration>
                 <executions>
