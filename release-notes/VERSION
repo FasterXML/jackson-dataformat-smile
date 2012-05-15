@@ -1,10 +1,12 @@
 Version: 2.0.2
 
 Release date:
-  xx-May-2012
+  14-May-2012
 
 Description:
-  Second patch release for 2.0.0.
+  Another patch release for 2.0.0.
+
+Fixes:
 
 * [Issue-2]: SmileParser failed to decode surrogate-pair characters for
     long Strings

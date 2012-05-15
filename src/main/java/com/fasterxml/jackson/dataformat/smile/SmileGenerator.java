@@ -671,12 +671,6 @@ public class SmileGenerator
             _writeByte(TOKEN_KEY_EMPTY_STRING);
             return;
         }
-        final byte[] bytes = name.asUnquotedUTF8();
-        final int byteLen = bytes.length;
-        if (byteLen != charLen) {
-            _writeFieldNameUnicode(name, bytes);
-            return;
-        }
         // Then: is it something we can share?
         if (_seenNameCount >= 0) {
             int ix = _findSeenName(name.getValue());
@@ -685,7 +679,12 @@ public class SmileGenerator
                 return;
             }
         }
-
+        final byte[] bytes = name.asUnquotedUTF8();
+        final int byteLen = bytes.length;
+        if (byteLen != charLen) {
+            _writeFieldNameUnicode(name, bytes);
+            return;
+        }
         // Common case: short ASCII name that fits in buffer as is
         if (byteLen <= MAX_SHORT_NAME_ASCII_BYTES) {
             // output buffer is bigger than what we need, always, so
@@ -737,15 +736,6 @@ public class SmileGenerator
     protected final void _writeFieldNameUnicode(SerializableString name, byte[] bytes)
         throws IOException, JsonGenerationException
     {
-        // Then: is it something we can share?
-        if (_seenNameCount >= 0) {
-            int ix = _findSeenName(name.getValue());
-            if (ix >= 0) {
-                _writeSharedNameReference(ix);
-                return;
-            }
-        }
-
         final int byteLen = bytes.length;
 
         // Common case: short Unicode name that fits in output buffer
