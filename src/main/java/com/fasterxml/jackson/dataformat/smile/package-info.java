@@ -1,10 +1,7 @@
 /**
- * Package that contains experimental implementation of
- * "Binary-Encoded JSON-Like" data format handlers (parser,
- * generator, factory produce both, supporting constants).
- *<p>
- * See <a href="http://wiki.fasterxml.com/SmileFormat">Smile format specification</a> for more details.
- * 
- * @since 1.6
+ * Package that contains implementation of Jackson Streaming API that works
+ * with Smile data format (see <a href="http://wiki.fasterxml.com/SmileFormat">Smile format specification</a>),
+ * and can be used with standard Jackson data binding functionality to deal with
+ * Smile encoded data.
  */
 package com.fasterxml.jackson.dataformat.smile;

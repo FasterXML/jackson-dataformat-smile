@@ -5,8 +5,6 @@ package com.fasterxml.jackson.dataformat.smile;
  * buffers that are used.
  *
  * @param <T> Type of name entries stored in arrays to recycle
- * 
- * @since 1.7
  */
 public class SmileBufferRecycler<T>
 {
