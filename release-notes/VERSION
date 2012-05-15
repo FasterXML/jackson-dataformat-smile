@@ -8,19 +8,23 @@ Description:
 
 Fixes:
 
-* [Issue-2]: SmileParser failed to decode surrogate-pair characters for
-    long Strings
-  (reported by Steven S)
-
 ------------------------------------------------------------------------
 === History: ===
 ------------------------------------------------------------------------
 
-2.0.1 [23-Apr-2012]:
+2.0.2 (14-May-2012)
+
+Fixes:
+
+* [Issue-2]: SmileParser failed to decode surrogate-pair characters for
+    long Strings
+  (reported by Steven S)
+
+2.0.1 (23-Apr-2012)
 
 No new features; re-compiled to require 2.0.1, to help JDK 1.5 compliancy.
 
-2.0.0 [25-Mar-2012]:
+2.0.0 (25-Mar-2012)
 
 Fixes:
 
