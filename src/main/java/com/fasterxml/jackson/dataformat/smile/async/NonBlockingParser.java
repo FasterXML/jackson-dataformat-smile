@@ -1073,8 +1073,6 @@ public class NonBlockingParser
             loadMoreGuaranteed();
         }
         int ch = _inputBuffer[_inputPtr++];
-        // is this needed?
-        _typeByte = ch;
         switch ((ch >> 6) & 3) {
         case 0: // misc, including end marker
             switch (ch) {
@@ -1167,7 +1165,8 @@ public class NonBlockingParser
             break;
         }
         // Other byte values are illegal
-        _reportError("Invalid type marker byte 0x"+Integer.toHexString(_typeByte)+" for expected field name (or END_OBJECT marker)");
+        _reportError("Invalid type marker byte 0x"+Integer.toHexString(_inputBuffer[_inputPtr-1])
+                +" for expected field name (or END_OBJECT marker)");
         return null;
     }
 
@@ -1607,9 +1606,9 @@ public class NonBlockingParser
         case STATE_NUMBER_BIGINT:
             return _nextBigInt(_substate) != JsonToken.NOT_AVAILABLE;
         case STATE_NUMBER_FLOAT:
-            return _nextFloat(_substate) != JsonToken.NOT_AVAILABLE;
+            return _nextFloat(_substate, _pendingInt) != JsonToken.NOT_AVAILABLE;
         case STATE_NUMBER_DOUBLE:
-            return _nextDouble(_substate) != JsonToken.NOT_AVAILABLE;
+            return _nextDouble(_substate, _pendingLong) != JsonToken.NOT_AVAILABLE;
         case STATE_NUMBER_BIGDEC:
             return _nextBigDecimal(_substate) != JsonToken.NOT_AVAILABLE;
         }
@@ -1685,27 +1684,6 @@ public class NonBlockingParser
         int outPtr = 0;
         final byte[] inBuf = _inputBuffer;
 	int inPtr = _inputPtr;
-	
-        // loop unrolling SHOULD be faster (as with _decodeShortAsciiName), but somehow
-	// is NOT; as per testing, benchmarking... very weird.
-	/*
-        for (int inEnd = inPtr + len - 3; inPtr < inEnd; ) {
-            outBuf[outPtr++] = (char) inBuf[inPtr++];            
-            outBuf[outPtr++] = (char) inBuf[inPtr++];            
-            outBuf[outPtr++] = (char) inBuf[inPtr++];            
-            outBuf[outPtr++] = (char) inBuf[inPtr++];            
-        }
-        int left = (len & 3);
-        if (left > 0) {
-            outBuf[outPtr++] = (char) inBuf[inPtr++];
-            if (left > 1) {
-                outBuf[outPtr++] = (char) inBuf[inPtr++];
-                if (left > 2) {
-                    outBuf[outPtr++] = (char) inBuf[inPtr++];
-                }
-            }
-        }
-        */
 
 	// meaning: regular tight loop is no slower, typically faster here:
 	for (final int end = inPtr + len; inPtr < end; ++inPtr) {
