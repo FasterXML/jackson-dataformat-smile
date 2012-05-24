@@ -11,7 +11,7 @@ import java.io.IOException;
  * non-blocking parser has no more data to feed it should call
  * {@link #endOfInput} to indicate end of logical input stream.
  * 
- * @author Tatu Salornata
+ * @author Tatu Saloranta
  */
 public interface AsyncInputFeeder
 {
@@ -26,7 +26,7 @@ public interface AsyncInputFeeder
      * Method that can be called to feed more data, if (and only if)
      * {@link #needMoreInput} returns true.
      * 
-     * @param data Byte array that containts data to feed: caller must ensure data remains
+     * @param data Byte array that contains data to feed: caller must ensure data remains
      *    stable until it is fully processed (which is true when {@link #needMoreInput}
      *    returns true)
      * @param offset Offset within array where input data to process starts

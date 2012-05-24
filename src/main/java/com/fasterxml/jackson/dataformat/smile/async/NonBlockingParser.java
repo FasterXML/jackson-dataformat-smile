@@ -19,10 +19,35 @@ public class NonBlockingParser
     extends ParserBase
     implements AsyncInputFeeder
 {
+    private final static byte[] NO_BYTES = new byte[0];
     private final static int[] NO_INTS = new int[0];
-
     private final static String[] NO_STRINGS = new String[0];
+
+    /*
+    /**********************************************************************
+    /* State constants
+    /**********************************************************************
+     */
+
+    // // // Initial bootstrapping states:
     
+    /**
+     * State right after parser has been constructed: waiting for header
+     * (which may or may not be mandatory).
+     */
+    protected final static int STATE_INITIAL = 0;
+
+    // // // States for optional in-stream headers
+    protected final static int STATE_HEADER = 1;
+    
+    // // // States for decoding numbers:
+    protected final static int STATE_NUMBER_INT = 3;
+    protected final static int STATE_NUMBER_LONG = 4;
+    protected final static int STATE_NUMBER_FLOAT = 5;
+    protected final static int STATE_NUMBER_DOUBLE = 6;
+    protected final static int STATE_NUMBER_BIGINT = 7;
+    protected final static int STATE_NUMBER_BIGDEC = 8;
+
     /*
     /**********************************************************************
     /* Configuration
@@ -56,20 +81,21 @@ public class NonBlockingParser
      */
     
     /**
-     * Current buffer from which data is read; generally data is read into
-     * buffer from input source, but in some cases pre-loaded buffer
-     * is handed to the parser.
+     * This buffer is actually provided via {@link AsyncInputFeeder}
      */
-    protected byte[] _inputBuffer;
-
+    protected byte[] _inputBuffer = NO_BYTES;
+    
     /**
-     * Flag that indicates whether the input buffer is recycable (and
-     * needs to be returned to recycler once we are done) or not.
-     *<p>
-     * If it is not, it also means that parser can NOT modify underlying
-     * buffer.
+     * In addition to current buffer pointer, and end pointer,
+     * we will also need to know number of bytes originally
+     * contained. This is needed to correctly update location
+     * information when the block has been completed.
      */
-    protected boolean _bufferRecyclable;
+    protected int _origBufferLen;
+
+    // And from ParserBase:
+//    protected int _inputPtr;
+//    protected int _inputEnd;
     
     /*
     /**********************************************************************
@@ -78,11 +104,21 @@ public class NonBlockingParser
      */
 
     /**
+     * Current main decoding state
+     */
+    protected int _state;
+
+    /**
+     * Addition indicator within state; contextually relevant for just that state
+     */
+    protected int _substate;
+    
+    /**
      * Flag that indicates that the current token has not yet
      * been fully processed, and needs to be finished for
      * some access (or skipped to obtain the next token)
      */
-    protected boolean _tokenIncomplete = false;
+    protected boolean _tokenIncomplete;
     
     /**
      * Type byte of the current token
@@ -97,6 +133,30 @@ public class NonBlockingParser
      */
     protected boolean _got32BitFloat;
 
+    /**
+     * There are some multi-byte combinations that must be handled
+     * as a unit: CR+LF linefeeds, multi-byte UTF-8 characters, and
+     * multi-character end markers for comments and PIs.
+     * Since they can be split across input buffer
+     * boundaries, first byte(s) may need to be temporarily stored.
+     *<p>
+     * If so, this int will store byte(s), in little-endian format
+     * (that is, first pending byte is at 0x000000FF, second [if any]
+     * at 0x0000FF00, and third at 0x00FF0000). This can be
+     * (and is) used to figure out actual number of bytes pending,
+     * for multi-byte (UTF-8) character decoding.
+     *<p>
+     * Note: it is assumed that if value is 0, there is no data.
+     * Thus, if 0 needed to be added pending, it has to be masked.
+     */
+    protected int _pendingInput;
+
+    /**
+     * Flag that is sent when calling application indicates that there will
+     * be no more input to parse.
+     */
+    protected boolean _endOfInput = false;
+    
     /*
     /**********************************************************************
     /* Symbol handling, decoding
@@ -113,10 +173,27 @@ public class NonBlockingParser
      */
     protected int[] _quadBuffer = NO_INTS;
 
-    /**
-     * Quads used for hash calculation
+    /*
+    /**********************************************************************
+    /* Name/entity parsing state
+    /**********************************************************************
      */
-    protected int _quad1, _quad2;
+
+    /**
+     * Number of complete quads parsed for current name (quads
+     * themselves are stored in {@link #_quadBuffer}).
+     */
+    protected int _quadCount;
+
+    /**
+     * Bytes parsed for the current, incomplete, quad
+     */
+    protected int _currQuad;
+
+    /**
+     * Number of bytes pending/buffered, stored in {@link #_currQuad}
+     */
+    protected int _currQuadBytes = 0;
      
     /**
      * Array of recently seen field names, which may be back referenced
@@ -157,22 +234,19 @@ public class NonBlockingParser
      */
 
     public NonBlockingParser(IOContext ctxt, int parserFeatures, int smileFeatures,
-            ObjectCodec codec, BytesToNameCanonicalizer sym,
-            byte[] inputBuffer, int start, int end,
-            boolean bufferRecyclable)
+            ObjectCodec codec, BytesToNameCanonicalizer sym)
     {
         super(ctxt, parserFeatures);        
         _objectCodec = codec;
         _symbols = sym;
-
-        _inputBuffer = inputBuffer;
-        _inputPtr = start;
-        _inputEnd = end;
-        _bufferRecyclable = bufferRecyclable;
         
         _tokenInputRow = -1;
         _tokenInputCol = -1;
         _smileBufferRecycler = _smileBufferRecycler();
+
+        _currToken = JsonToken.NOT_AVAILABLE;
+        _state = STATE_INITIAL;
+        _tokenIncomplete = true;
     }
 
     @Override
@@ -261,17 +335,34 @@ public class NonBlockingParser
     /**********************************************************************
      */
 
-    public boolean needMoreInput() {
-        // !!! TBI
-        return true;
+    public final boolean needMoreInput() {
+        return (_inputPtr >=_inputEnd) && !_endOfInput;
     }
 
-    public void feedInput(byte[] data, int offset, int len) throws IOException {
-        // !!! TBI
+    public void feedInput(byte[] buf, int start, int len)
+        throws IOException
+    {
+        // Must not have remaining input
+        if (_inputPtr < _inputEnd) {
+            throw new IOException("Still have "+(_inputEnd - _inputPtr)+" undecoded bytes, should not call 'feedInput'");
+        }
+        // and shouldn't have been marked as end-of-input
+        if (_endOfInput) {
+            throw new IOException("Already closed, can not feed more input");
+        }
+        // Time to update pointers first
+        _currInputProcessed += _origBufferLen;
+        _currInputRowStart -= _origBufferLen;
+
+        // And then update buffer settings
+        _inputBuffer = buf;
+        _inputPtr = start;
+        _inputEnd = start+len;
+        _origBufferLen = len;
     }
 
     public void endOfInput() {
-        // !!! TBI
+        _endOfInput = true;
     }
     
     /*                                                                                       
@@ -408,14 +499,7 @@ public class NonBlockingParser
     @Override
     protected void _releaseBuffers() throws IOException
     {
-         super._releaseBuffers();
-         if (_bufferRecyclable) {
-             byte[] buf = _inputBuffer;
-             if (buf != null) {
-                 _inputBuffer = null;
-                 _ioContext.releaseReadIOBuffer(buf);
-             }
-         }
+        super._releaseBuffers();
         {
             String[] nameBuf = _seenNames;
             if (nameBuf != null && nameBuf.length > 0) {
@@ -466,7 +550,9 @@ public class NonBlockingParser
         _numTypesValid = NR_UNKNOWN;
         // For longer tokens (text, binary), we'll only read when requested
         if (_tokenIncomplete) {
-            _skipIncomplete();
+            if (!_skipIncomplete()) {
+                return JsonToken.NOT_AVAILABLE;
+            }
         }
         _tokenInputTotal = _currInputProcessed + _inputPtr;
         // also: clear any data retained so far
@@ -476,15 +562,7 @@ public class NonBlockingParser
             return (_currToken = _handleFieldName());
         }
         if (_inputPtr >= _inputEnd) {
-            if (!loadMore()) {
-                _handleEOF();
-                /* NOTE: here we can and should close input, release buffers,
-                 * since this is "hard" EOF, not a boundary imposed by
-                 * header token.
-                 */
-                close();
-                return (_currToken = null);
-            }
+            return JsonToken.NOT_AVAILABLE;
         }
         int ch = _inputBuffer[_inputPtr++];
         _typeByte = ch;
@@ -497,53 +575,57 @@ public class NonBlockingParser
 
         case 1: // simple literals, numbers
             {
+                _numTypesValid = 0;
                 int typeBits = ch & 0x1F;
-                if (typeBits < 4) {
-                    switch (typeBits) {
-                    case 0x00:
-                        _textBuffer.resetWithEmpty();
-                        return (_currToken = JsonToken.VALUE_STRING);
-                    case 0x01:
-                        return (_currToken = JsonToken.VALUE_NULL);
-                    case 0x02: // false
-                        return (_currToken = JsonToken.VALUE_FALSE);
-                    default: // 0x03 == true
-                        return (_currToken = JsonToken.VALUE_TRUE);
-                    }
-                }
-                // next 3 bytes define subtype
-                if (typeBits < 8) { // VInt (zigzag), BigInteger
-                    if ((typeBits & 0x3) <= 0x2) { // 0x3 reserved (should never occur)
-                        _tokenIncomplete = true;
-                        _numTypesValid = 0;
-                        return (_currToken = JsonToken.VALUE_NUMBER_INT);
-                    }
+                switch (ch & 0x1F) {
+                case 0x00:
+                    _textBuffer.resetWithEmpty();
+                    return (_currToken = JsonToken.VALUE_STRING);
+                case 0x01:
+                    return (_currToken = JsonToken.VALUE_NULL);
+                case 0x02: // false
+                    return (_currToken = JsonToken.VALUE_FALSE);
+                case 0x03: // 0x03 == true
+                    return (_currToken = JsonToken.VALUE_TRUE);
+                case 0x04:
+                    _state = STATE_NUMBER_INT;
+                    return _nextInt(0);
+                case 0x05:
+                    _state = STATE_NUMBER_LONG;
+                    return _nextLong(0);
+                case 0x06:
+                    _state = STATE_NUMBER_BIGINT;
+                    return _nextBigInt(0);
+                case 0x07: // illegal
                     break;
-                }
-                if (typeBits < 12) { // floating-point
-                    int subtype = typeBits & 0x3;
-                    if (subtype <= 0x2) { // 0x3 reserved (should never occur)
-                        _tokenIncomplete = true;
-                        _numTypesValid = 0;
-                        _got32BitFloat = (subtype == 0);
-                        return (_currToken = JsonToken.VALUE_NUMBER_FLOAT);
-                    }
+                case 0x08:
+                    _state = STATE_NUMBER_FLOAT;
+                    _got32BitFloat = true;
+                    return _nextFloat(0);
+                case 0x09:
+                    _state = STATE_NUMBER_DOUBLE;
+                    _got32BitFloat = false;
+                    return _nextDouble(0);
+                case 0x0A:
+                    _state = STATE_NUMBER_BIGDEC;
+                    return _nextBigDecimal(0);
+                case 0x0B: // illegal
                     break;
-                }
-                if (typeBits == 0x1A) { // == 0x3A == ':' -> possibly header signature for next chunk?
-                    if (handleSignature(false, false)) {
-                        /* Ok, now; end-marker and header both imply doc boundary and a
-                         * 'null token'; but if both are seen, they are collapsed.
-                         * We can check this by looking at current token; if it's null,
-                         * need to get non-null token
-                         */
-                        if (_currToken == null) {
-                            return nextToken();
-                        }
-                        return (_currToken = null);
+                case 0x1A) { // == 0x3A == ':' -> possibly header signature for next chunk?
+                    if (_nextHeader(1) == JsonToken.NOT_AVAILABLE)
+                        return JsonToken.NOT_AVAILABLE;
                     }
+                    //if (handleSignature(false, false)) {
+                    /* Ok, now; end-marker and header both imply doc boundary and a
+                     * 'null token'; but if both are seen, they are collapsed.
+                     * We can check this by looking at current token; if it's null,
+                     * need to get non-null token
+                     */
+                    if (_currToken == null) {
+                        return nextToken();
+                    }
+                    return (_currToken = null);
             	}
-            	_reportError("Unrecognized token byte 0x3A (malformed segment header?");
             }
             // and everything else is reserved, for now
             break;
@@ -676,297 +758,16 @@ public class NonBlockingParser
     /**********************************************************************
      */
 
-    @Override
-    public boolean nextFieldName(SerializableString str)
-        throws IOException, JsonParseException
-    {
-        // Two parsing modes; can only succeed if expecting field name, so handle that first:
-        if (_parsingContext.inObject() && _currToken != JsonToken.FIELD_NAME) {
-            byte[] nameBytes = str.asQuotedUTF8();
-            final int byteLen = nameBytes.length;
-            // need room for type byte, name bytes, possibly end marker, so:
-            if ((_inputPtr + byteLen + 1) < _inputEnd) { // maybe...
-                int ptr = _inputPtr;
-                int ch = _inputBuffer[ptr++];
-                _typeByte = ch;
-                main_switch:
-                switch ((ch >> 6) & 3) {
-                case 0: // misc, including end marker
-                    switch (ch) {
-                    case 0x20: // empty String as name, legal if unusual
-                        _currToken = JsonToken.FIELD_NAME;
-                        _inputPtr = ptr;
-                        _parsingContext.setCurrentName("");
-                        return (byteLen == 0);
-                    case 0x30: // long shared
-                    case 0x31:
-                    case 0x32:
-                    case 0x33:
-                        {
-                            int index = ((ch & 0x3) << 8) + (_inputBuffer[ptr++] & 0xFF);
-                            if (index >= _seenNameCount) {
-                                _reportInvalidSharedName(index);
-                            }
-                            String name = _seenNames[index];
-                            _parsingContext.setCurrentName(name);
-                            _inputPtr = ptr;
-                            _currToken = JsonToken.FIELD_NAME;
-                            return (name.equals(str.getValue()));
-                        }
-                    //case 0x34: // long ASCII/Unicode name; let's not even try...
-                    }
-                    break;
-                case 1: // short shared, can fully process
-                    {
-                        int index = (ch & 0x3F);
-                        if (index >= _seenNameCount) {
-                            _reportInvalidSharedName(index);
-                        }
-                        _parsingContext.setCurrentName(_seenNames[index]);
-                        String name = _seenNames[index];
-                        _parsingContext.setCurrentName(name);
-                        _inputPtr = ptr;
-                        _currToken = JsonToken.FIELD_NAME;
-                        return (name.equals(str.getValue()));
-                    }
-                case 2: // short ASCII
-                    {
-                        int len = 1 + (ch & 0x3f);
-                        if (len == byteLen) {
-                            int i = 0;
-                            for (; i < len; ++i) {
-                                if (nameBytes[i] != _inputBuffer[ptr+i]) {
-                                    break main_switch;
-                                }
-                            }
-                            // yes, does match...
-                            _inputPtr = ptr + len;
-                            final String name = str.getValue();
-                            if (_seenNames != null) {
-                               if (_seenNameCount >= _seenNames.length) {
-                                   _seenNames = _expandSeenNames(_seenNames);
-                               }
-                               _seenNames[_seenNameCount++] = name;
-                            }
-                            _parsingContext.setCurrentName(name);
-                            _currToken = JsonToken.FIELD_NAME;
-                            return true;
-                        }
-                    }
-                    break;
-                case 3: // short Unicode
-                    // all valid, except for 0xFF
-                    {
-                        int len = (ch & 0x3F);
-                        if (len > 0x37) {
-                            if (len == 0x3B) {
-                                _currToken = JsonToken.END_OBJECT;
-                                if (!_parsingContext.inObject()) {
-                                    _reportMismatchedEndMarker('}', ']');
-                                }
-                                _inputPtr = ptr;
-                                _parsingContext = _parsingContext.getParent();
-                                return false;
-                            }
-                            // error, but let's not worry about that here
-                            break;
-                        }
-                        len += 2; // values from 2 to 57...
-                        if (len == byteLen) {
-                            int i = 0;
-                            for (; i < len; ++i) {
-                                if (nameBytes[i] != _inputBuffer[ptr+i]) {
-                                    break main_switch;
-                                }
-                            }
-                            // yes, does match...
-                            _inputPtr = ptr + len;
-                            final String name = str.getValue();
-                            if (_seenNames != null) {
-                               if (_seenNameCount >= _seenNames.length) {
-                                   _seenNames = _expandSeenNames(_seenNames);
-                               }
-                               _seenNames[_seenNameCount++] = name;
-                            }
-                            _parsingContext.setCurrentName(name);
-                            _currToken = JsonToken.FIELD_NAME;
-                            return true;
-                        }
-                    }
-                    break;
-                }
-            }
-            // otherwise fall back to default processing:
-            JsonToken t = _handleFieldName();
-            _currToken = t;
-            return (t == JsonToken.FIELD_NAME) && str.getValue().equals(_parsingContext.getCurrentName());
-        }
-        // otherwise just fall back to default handling; should occur rarely
-        return (nextToken() == JsonToken.FIELD_NAME) && str.getValue().equals(getCurrentName());
-    }
-
-    @Override
-    public String nextTextValue()
-        throws IOException, JsonParseException
-    {
-        // can't get text value if expecting name, so
-        if (!_parsingContext.inObject() || _currToken == JsonToken.FIELD_NAME) {
-            if (_tokenIncomplete) {
-                _skipIncomplete();
-            }
-            int ptr = _inputPtr;
-            if (ptr >= _inputEnd) {
-                if (!loadMore()) {
-                    _handleEOF();
-                    close();
-                    _currToken = null;
-                    return null;
-                }
-                ptr = _inputPtr;
-            }
-            int ch = _inputBuffer[ptr++];
-            _tokenInputTotal = _currInputProcessed + _inputPtr;
-
-            // also: clear any data retained so far
-            _binaryValue = null;
-            _typeByte = ch;
-
-            switch ((ch >> 5) & 0x7) {
-            case 0: // short shared string value reference
-                if (ch == 0) { // important: this is invalid, don't accept
-                    _reportError("Invalid token byte 0x00");
-                }
-                // _handleSharedString...
-                {
-                    --ch;
-                    if (ch >= _seenStringValueCount) {
-                        _reportInvalidSharedStringValue(ch);
-                    }
-                    _inputPtr = ptr;
-                    String text = _seenStringValues[ch];
-                    _textBuffer.resetWithString(text);
-                    _currToken = JsonToken.VALUE_STRING;
-                    return text;
-                }
-
-            case 1: // simple literals, numbers
-                {
-                    int typeBits = ch & 0x1F;
-                    if (typeBits == 0x00) {
-                        _inputPtr = ptr;
-                        _textBuffer.resetWithEmpty();
-                        _currToken = JsonToken.VALUE_STRING;
-                        return "";
-                    }
-                }
-                break;
-            case 2: // tiny ASCII
-                // fall through            
-            case 3: // short ASCII
-                _currToken = JsonToken.VALUE_STRING;
-                _inputPtr = ptr;
-                _decodeShortAsciiValue(1 + (ch & 0x3F));
-                {
-                    // No need to decode, unless we have to keep track of back-references (for shared string values)
-                    String text;
-                    if (_seenStringValueCount >= 0) { // shared text values enabled
-                        if (_seenStringValueCount < _seenStringValues.length) {
-                            text = _textBuffer.contentsAsString();
-                            _seenStringValues[_seenStringValueCount++] = text;
-                        } else {
-                            _expandSeenStringValues();
-                            text = _textBuffer.contentsAsString();
-                        }
-                    } else {
-                        text = _textBuffer.contentsAsString();
-                    }
-                    return text;
-                }
-
-            case 4: // tiny Unicode
-                // fall through
-            case 5: // short Unicode
-                _currToken = JsonToken.VALUE_STRING;
-                _inputPtr = ptr;
-                _decodeShortUnicodeValue(2 + (ch & 0x3F));
-                {
-                    // No need to decode, unless we have to keep track of back-references (for shared string values)
-                    String text;
-                    if (_seenStringValueCount >= 0) { // shared text values enabled
-                        if (_seenStringValueCount < _seenStringValues.length) {
-                            text = _textBuffer.contentsAsString();
-                            _seenStringValues[_seenStringValueCount++] = text;
-                        } else {
-                            _expandSeenStringValues();
-                            text = _textBuffer.contentsAsString();
-                        }
-                    } else {
-                        text = _textBuffer.contentsAsString();
-                    }
-                    return text;
-                }
-            case 6: // small integers; zigzag encoded
-                break;
-            case 7: // binary/long-text/long-shared/start-end-markers
-                // TODO: support longer strings too?
-                /*
-                switch (ch & 0x1F) {
-                case 0x00: // long variable length ASCII
-                case 0x04: // long variable length unicode
-                    _tokenIncomplete = true;
-                    return (_currToken = JsonToken.VALUE_STRING);
-                case 0x08: // binary, 7-bit
-                    break main;
-                case 0x0C: // long shared string
-                case 0x0D:
-                case 0x0E:
-                case 0x0F:
-                    if (_inputPtr >= _inputEnd) {
-                        loadMoreGuaranteed();
-                    }
-                    return _handleSharedString(((ch & 0x3) << 8) + (_inputBuffer[_inputPtr++] & 0xFF));
-                }
-                break;
-                */
-                break;
-            }
-        }
-        // otherwise fall back to generic handling:
-        return (nextToken() == JsonToken.VALUE_STRING) ? getText() : null;
-    }
-
-    @Override
-    public int nextIntValue(int defaultValue)
-        throws IOException, JsonParseException
-    {
-        if (nextToken() == JsonToken.VALUE_NUMBER_INT) {
-            return getIntValue();
-        }
-        return defaultValue;
-    }
-
-    @Override
-    public long nextLongValue(long defaultValue)
-        throws IOException, JsonParseException
-    {
-        if (nextToken() == JsonToken.VALUE_NUMBER_INT) {
-            return getLongValue();
-        }
-        return defaultValue;
-    }
-
-    @Override
-    public Boolean nextBooleanValue()
-        throws IOException, JsonParseException
-    {
-        switch (nextToken()) {
-        case VALUE_TRUE:
-            return Boolean.TRUE;
-        case VALUE_FALSE:
-            return Boolean.FALSE;
-        }
-        return null;
-    }
+    /* Implementing these methods efficiently for non-blocking cases would
+     * be complicated; so for now let's just use the default non-optimized
+     * implementation
+     */
+    
+//    public boolean nextFieldName(SerializableString str) throws IOException, JsonParseException
+//    public String nextTextValue() throws IOException, JsonParseException
+//    public int nextIntValue(int defaultValue) throws IOException, JsonParseException
+//    public long nextLongValue(long defaultValue) throws IOException, JsonParseException
+//    public Boolean nextBooleanValue() throws IOException, JsonParseException
     
     /*
     /**********************************************************************
@@ -985,20 +786,9 @@ public class NonBlockingParser
         throws IOException, JsonParseException
     {
         if (_tokenIncomplete) {
-            _tokenIncomplete = false;
-            // Let's inline part of "_finishToken", common case
-            int tb = _typeByte;
-            int type = (tb >> 5) & 0x7;
-            if (type == 2 || type == 3) { // tiny & short ASCII
-                _decodeShortAsciiValue(1 + (tb & 0x3F));
-                return _textBuffer.contentsAsString();
+            if (!_finishToken()) {
+                return null;
             }
-            if (type == 4 || type == 5) { // tiny & short Unicode
-                 // short unicode; note, lengths 2 - 65  (off-by-one compared to ASCII)
-                _decodeShortUnicodeValue(2 + (tb & 0x3F));
-                return _textBuffer.contentsAsString();
-            }
-            _finishToken();
         }
         if (_currToken == JsonToken.VALUE_STRING) {
             return _textBuffer.contentsAsString();
@@ -1023,7 +813,9 @@ public class NonBlockingParser
     {
         if (_currToken != null) { // null only before/after document
             if (_tokenIncomplete) {
-                _finishToken();
+                if (!_finishToken()) {
+                    return null;
+                }
             }
             switch (_currToken) {                
             case VALUE_STRING:
@@ -1061,7 +853,9 @@ public class NonBlockingParser
     {
         if (_currToken != null) { // null only before/after document
             if (_tokenIncomplete) {
-                _finishToken();
+                if (!_finishToken()) {
+                    return -1;
+                }
             }
             switch (_currToken) {
             case VALUE_STRING:
@@ -1098,7 +892,9 @@ public class NonBlockingParser
         throws IOException, JsonParseException
     {
         if (_tokenIncomplete) {
-            _finishToken();
+            if (!_finishToken()) { // or throw an exception
+                return null;
+            }
         }
         if (_currToken != JsonToken.VALUE_EMBEDDED_OBJECT ) {
             // Todo, maybe: support base64 for text?
@@ -1112,7 +908,9 @@ public class NonBlockingParser
         throws IOException, JsonParseException
     {
         if (_tokenIncomplete) {
-            _finishToken();
+            if (!_finishToken()) { // or throw an exception
+                return null;
+            }
         }
         if (_currToken == JsonToken.VALUE_EMBEDDED_OBJECT ) {
             return _binaryValue;
@@ -1663,7 +1461,7 @@ public class NonBlockingParser
      * Method called to finish parsing of a token so that token contents
      * are retriable
      */
-    protected void _finishToken()
+    protected boolean _finishToken()
     	throws IOException, JsonParseException
     {
         _tokenIncomplete = false;
@@ -1671,41 +1469,35 @@ public class NonBlockingParser
 
     	int type = ((tb >> 5) & 0x7);
         if (type == 1) { // simple literals, numbers
-            _finishNumberToken(tb);
-            return;
+            return _finishNumberToken(tb);
         }
         if (type <= 3) { // tiny & short ASCII
-            _decodeShortAsciiValue(1 + (tb & 0x3F));
-            return;
+            return _decodeShortAsciiValue(1 + (tb & 0x3F));
     	}
         if (type <= 5) { // tiny & short Unicode
              // short unicode; note, lengths 2 - 65  (off-by-one compared to ASCII)
-            _decodeShortUnicodeValue(2 + (tb & 0x3F));
-            return;
+            return _decodeShortUnicodeValue(2 + (tb & 0x3F));
     	}
         if (type == 7) {
             tb &= 0x1F;
             // next 3 bytes define subtype
             switch (tb >> 2) {
             case 0: // long variable length ASCII
-            	_decodeLongAscii();
-            	return;
+                return _decodeLongAscii();
             case 1: // long variable length unicode
-            	_decodeLongUnicode();
-            	return;
+                return _decodeLongUnicode();
             case 2: // binary, 7-bit
                 _binaryValue = _read7BitBinaryWithLength();
                 return;
             case 7: // binary, raw
-                _finishRawBinary();
-                return;
+                return _finishRawBinary();
             }
         }
         // sanity check
     	_throwInternal();
     }
 
-    protected final void _finishNumberToken(int tb)
+    protected final boolean _finishNumberToken(int tb)
         throws IOException, JsonParseException
     {
         tb &= 0x1F;
@@ -1713,27 +1505,24 @@ public class NonBlockingParser
         if (type == 1) { // VInt (zigzag) or BigDecimal
             int subtype = tb & 0x03;
             if (subtype == 0) { // (v)int
-                _finishInt();
-            } else if (subtype == 1) { // (v)long
-                _finishLong();
-            } else if (subtype == 2) {
-                _finishBigInteger();
-            } else {
-                _throwInternal();
+                return _finishInt();
             }
-            return;
+            if (subtype == 1) { // (v)long
+                return _finishLong();
+            }
+            if (subtype == 2) {
+                return _finishBigInteger();
+            }
+            _throwInternal();
         }
         if (type == 2) { // other numbers
             switch (tb & 0x03) {
             case 0: // float
-                _finishFloat();
-                return;
+                return _finishFloat();
             case 1: // double
-                _finishDouble();
-                return;
+                return _finishDouble();
             case 2: // big-decimal
-                _finishBigDecimal();
-                return;
+                return _finishBigDecimal();
             }
         }
         _throwInternal();
@@ -1745,10 +1534,10 @@ public class NonBlockingParser
     /**********************************************************************
      */
     
-    private final void _finishInt() throws IOException, JsonParseException
+    private final boolean _finishInt() throws IOException, JsonParseException
     {
     	if (_inputPtr >= _inputEnd) {
-    	    loadMoreGuaranteed();
+    	    return false;
     	}
     	int value = _inputBuffer[_inputPtr++];
     	int i;
@@ -1756,26 +1545,26 @@ public class NonBlockingParser
     		value &= 0x3F;
     	} else {
     	    if (_inputPtr >= _inputEnd) {
-    	        loadMoreGuaranteed();
+                return false;
     	    }
     	    i = _inputBuffer[_inputPtr++];
     	    if (i >= 0) { // 13 bits
     	        value = (value << 7) + i;
     	        if (_inputPtr >= _inputEnd) {
-    	            loadMoreGuaranteed();
+    	            return false;
     	        }
     	        i = _inputBuffer[_inputPtr++];
     	        if (i >= 0) {
     	            value = (value << 7) + i;
     	            if (_inputPtr >= _inputEnd) {
-    	                loadMoreGuaranteed();
+    	                return false;
     	            }
     	            i = _inputBuffer[_inputPtr++];
     	            if (i >= 0) {
     	                value = (value << 7) + i;
     	                // and then we must get negative
     	                if (_inputPtr >= _inputEnd) {
-    	                    loadMoreGuaranteed();
+    	                    return false;
     	                }
     	                i = _inputBuffer[_inputPtr++];
     	                if (i >= 0) {
@@ -1788,9 +1577,10 @@ public class NonBlockingParser
     	}
         _numberInt = SmileUtil.zigzagDecode(value);
     	_numTypesValid = NR_INT;
+    	return true;
     }
 
-    private final void  _finishLong()
+    private final boolean  _finishLong()
         throws IOException, JsonParseException
     {
 	// Ok, first, will always get 4 full data bytes first; 1 was already passed
@@ -1798,42 +1588,47 @@ public class NonBlockingParser
     	// and loop for the rest
     	while (true) {
     	    if (_inputPtr >= _inputEnd) {
-    	        loadMoreGuaranteed();
+                return false;
     	    }
     	    int value = _inputBuffer[_inputPtr++];
     	    if (value < 0) {
     	        l = (l << 6) + (value & 0x3F);
     	        _numberLong = SmileUtil.zigzagDecode(l);
     	        _numTypesValid = NR_LONG;
-    	        return;
+    	        return true;
     	    }
     	    l = (l << 7) + value;
     	}
     }
 
-    private final void _finishBigInteger()
+    private final boolean _finishBigInteger()
         throws IOException, JsonParseException
     {
         byte[] raw = _read7BitBinaryWithLength();
+        if (raw == null) {
+            return false;
+        }
         _numberBigInt = new BigInteger(raw);
         _numTypesValid = NR_BIGINT;
+        return true;
     }
 
-    private final void _finishFloat()
+    private final boolean _finishFloat()
         throws IOException, JsonParseException
     {
         // just need 5 bytes to get int32 first; all are unsigned
     	int i = _fourBytesToInt();
     	if (_inputPtr >= _inputEnd) {
-    		loadMoreGuaranteed();
+            return false;
     	}
     	i = (i << 7) + _inputBuffer[_inputPtr++];
     	float f = Float.intBitsToFloat(i);
 	_numberDouble = (double) f;
 	_numTypesValid = NR_DOUBLE;
+	return true;
     }
 
-    private final void _finishDouble()
+    private final boolean _finishDouble()
 	throws IOException, JsonParseException
     {
         // ok; let's take two sets of 4 bytes (each is int)
@@ -1841,17 +1636,19 @@ public class NonBlockingParser
 	long value = (hi << 28) + (long) _fourBytesToInt();
 	// and then remaining 2 bytes
 	if (_inputPtr >= _inputEnd) {
-	    loadMoreGuaranteed();
+            return false;
 	}
 	value = (value << 7) + _inputBuffer[_inputPtr++];
 	if (_inputPtr >= _inputEnd) {
-	    loadMoreGuaranteed();
+            return false;
 	}
 	value = (value << 7) + _inputBuffer[_inputPtr++];
 	_numberDouble = Double.longBitsToDouble(value);
 	_numTypesValid = NR_DOUBLE;
+	return true;
     }
 
+    /*
     private final int _fourBytesToInt() 
         throws IOException, JsonParseException
     {
@@ -1872,6 +1669,7 @@ public class NonBlockingParser
 	}
 	return (i << 7) + _inputBuffer[_inputPtr++];
     }
+    */
 	
     private final void _finishBigDecimal()
         throws IOException, JsonParseException
@@ -2185,9 +1983,18 @@ public class NonBlockingParser
     /**
      * Method called to skip remainders of an incomplete token, when
      * contents themselves will not be needed any more
+     * 
+     * @return If skipping succeeded (enough content was available); false if not
      */
-    protected void _skipIncomplete() throws IOException, JsonParseException
+    protected boolean _skipIncomplete() throws IOException, JsonParseException
     {
+        switch (_state) {
+        case STATE_INITIAL:
+            _handleHeader(true);
+        case STATE_HEADER:
+            _handleHeader(false);
+        }
+        
     	_tokenIncomplete = false;
     	int tb = _typeByte;
         switch ((tb >> 5) & 0x7) {
@@ -2207,7 +2014,7 @@ public class NonBlockingParser
                         final byte[] buf = _inputBuffer;
                         while (_inputPtr < end) {
                                 if (buf[_inputPtr++] < 0) {
-                                        return;
+                                    return;
                                 }
                         }
                         loadMoreGuaranteed();                           
