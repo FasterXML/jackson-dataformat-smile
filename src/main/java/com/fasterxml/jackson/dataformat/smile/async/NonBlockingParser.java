@@ -43,9 +43,9 @@ public class NonBlockingParser
     // // // States for decoding numbers:
     protected final static int STATE_NUMBER_INT = 3;
     protected final static int STATE_NUMBER_LONG = 4;
-    protected final static int STATE_NUMBER_FLOAT = 5;
-    protected final static int STATE_NUMBER_DOUBLE = 6;
-    protected final static int STATE_NUMBER_BIGINT = 7;
+    protected final static int STATE_NUMBER_BIGINT = 5;
+    protected final static int STATE_NUMBER_FLOAT = 6;
+    protected final static int STATE_NUMBER_DOUBLE = 7;
     protected final static int STATE_NUMBER_BIGDEC = 8;
 
     /*
@@ -119,11 +119,6 @@ public class NonBlockingParser
      * some access (or skipped to obtain the next token)
      */
     protected boolean _tokenIncomplete;
-    
-    /**
-     * Type byte of the current token
-     */
-    protected int _typeByte;
 
     /**
      * Specific flag that is set when we encountered a 32-bit
@@ -134,23 +129,15 @@ public class NonBlockingParser
     protected boolean _got32BitFloat;
 
     /**
-     * There are some multi-byte combinations that must be handled
-     * as a unit: CR+LF linefeeds, multi-byte UTF-8 characters, and
-     * multi-character end markers for comments and PIs.
-     * Since they can be split across input buffer
-     * boundaries, first byte(s) may need to be temporarily stored.
-     *<p>
-     * If so, this int will store byte(s), in little-endian format
-     * (that is, first pending byte is at 0x000000FF, second [if any]
-     * at 0x0000FF00, and third at 0x00FF0000). This can be
-     * (and is) used to figure out actual number of bytes pending,
-     * for multi-byte (UTF-8) character decoding.
-     *<p>
-     * Note: it is assumed that if value is 0, there is no data.
-     * Thus, if 0 needed to be added pending, it has to be masked.
+     * For 32-bit values, we may use this for combining values
      */
-    protected int _pendingInput;
+    protected int _pendingInt;
 
+    /**
+     * For 64-bit values, we may use this for combining values
+     */
+    protected long _pendingLong;
+    
     /**
      * Flag that is sent when calling application indicates that there will
      * be no more input to parse.
@@ -461,8 +448,7 @@ public class NonBlockingParser
      */
 
     @Override
-    protected void _finishString() throws IOException, JsonParseException
-    {
+    protected void _finishString() throws IOException, JsonParseException {
         // should never be called; but must be defined for superclass
         _throwInternal();
     }
@@ -550,7 +536,8 @@ public class NonBlockingParser
         _numTypesValid = NR_UNKNOWN;
         // For longer tokens (text, binary), we'll only read when requested
         if (_tokenIncomplete) {
-            if (!_skipIncomplete()) {
+            // we might be able to optimize by separate skipping, but for now:
+            if (!_finishToken()) {
                 return JsonToken.NOT_AVAILABLE;
             }
         }
@@ -565,7 +552,6 @@ public class NonBlockingParser
             return JsonToken.NOT_AVAILABLE;
         }
         int ch = _inputBuffer[_inputPtr++];
-        _typeByte = ch;
         switch ((ch >> 5) & 0x7) {
         case 0: // short shared string value reference
             if (ch == 0) { // important: this is invalid, don't accept
@@ -576,7 +562,6 @@ public class NonBlockingParser
         case 1: // simple literals, numbers
             {
                 _numTypesValid = 0;
-                int typeBits = ch & 0x1F;
                 switch (ch & 0x1F) {
                 case 0x00:
                     _textBuffer.resetWithEmpty();
@@ -589,29 +574,32 @@ public class NonBlockingParser
                     return (_currToken = JsonToken.VALUE_TRUE);
                 case 0x04:
                     _state = STATE_NUMBER_INT;
-                    return _nextInt(0);
+                    return _nextInt(0, 0);
                 case 0x05:
+                    _numberLong = 0;
                     _state = STATE_NUMBER_LONG;
-                    return _nextLong(0);
+                    return _nextLong(0, 0L);
                 case 0x06:
                     _state = STATE_NUMBER_BIGINT;
                     return _nextBigInt(0);
                 case 0x07: // illegal
                     break;
                 case 0x08:
+                    _pendingInt = 0;
                     _state = STATE_NUMBER_FLOAT;
                     _got32BitFloat = true;
-                    return _nextFloat(0);
+                    return _nextFloat(0, 0);
                 case 0x09:
+                    _pendingLong = 0L;
                     _state = STATE_NUMBER_DOUBLE;
                     _got32BitFloat = false;
-                    return _nextDouble(0);
+                    return _nextDouble(0, 0L);
                 case 0x0A:
                     _state = STATE_NUMBER_BIGDEC;
                     return _nextBigDecimal(0);
                 case 0x0B: // illegal
                     break;
-                case 0x1A) { // == 0x3A == ':' -> possibly header signature for next chunk?
+                case 0x1A: { // == 0x3A == ':' -> possibly header signature for next chunk?
                     if (_nextHeader(1) == JsonToken.NOT_AVAILABLE)
                         return JsonToken.NOT_AVAILABLE;
                     }
@@ -752,6 +740,157 @@ public class NonBlockingParser
     	return super.getNumberType();
     }
 
+    /*
+    /**********************************************************************
+    /* Internal methods: second-level parsing:
+    /**********************************************************************
+     */
+
+    private final JsonToken _nextInt(int substate, int value)
+            throws IOException, JsonParseException
+    {
+        while (_inputPtr < _inputEnd) {
+            int b = _inputBuffer[_inputPtr++];
+            if (b < 0) { // got it all; these are last 6 bits
+                value = (value << 6) | (b & 0x3F);
+                _numberInt = SmileUtil.zigzagDecode(value);
+                _numTypesValid = NR_INT;
+                _tokenIncomplete = false;
+                return (_currToken = JsonToken.VALUE_NUMBER_INT);
+            }
+            // can't get too big; 5 bytes is max
+            if (++substate >= 5 ) {
+                _reportError("Corrupt input; 32-bit VInt extends beyond 5 data bytes");
+            }
+            value = (value << 7) | b;
+        }
+        // did not get it all; mark the state so we know where to return:
+        _tokenIncomplete = true;
+        _substate = substate;
+        _pendingInt = value;
+        return (_currToken = JsonToken.NOT_AVAILABLE);
+    }
+
+    private final JsonToken _nextLong(int substate, long value) throws IOException, JsonParseException
+    {
+        while (_inputPtr < _inputEnd) {
+            int b = _inputBuffer[_inputPtr++];
+            if (b < 0) { // got it all; these are last 6 bits
+                value = (value << 6) | (b & 0x3F);
+                _numberLong = SmileUtil.zigzagDecode(value);
+                _numTypesValid = NR_LONG;
+                _tokenIncomplete = false;
+                return (_currToken = JsonToken.VALUE_NUMBER_INT);
+            }
+            // can't get too big; 10 bytes is max
+            if (++substate >=  10) {
+                _reportError("Corrupt input; 64-bit VInt extends beyond 10 data bytes");
+            }
+            value = (value << 7) | b;
+        }
+        // did not get it all; mark the state so we know where to return:
+        _tokenIncomplete = true;
+        _substate = substate;
+        _pendingLong = value;
+        return (_currToken = JsonToken.NOT_AVAILABLE);
+    }
+
+    private final JsonToken _nextBigInt(int substate) throws IOException, JsonParseException
+    {
+        
+        // !!! TBI
+        return JsonToken.NOT_AVAILABLE;
+    }
+    
+    private final JsonToken _nextFloat(int substate, int value) throws IOException, JsonParseException
+    {
+        while (_inputPtr < _inputEnd) {
+            int b = _inputBuffer[_inputPtr++];
+            value = (value << 7) + b;
+            if (++substate == 5) { // done!
+                _numberDouble = (double) Float.intBitsToFloat(value);
+                _numTypesValid = NR_DOUBLE;
+                _tokenIncomplete = false;
+                return (_currToken = JsonToken.VALUE_NUMBER_FLOAT);
+            }
+        }
+        _tokenIncomplete = true;
+        _substate = substate;
+        _pendingInt = value;
+        return (_currToken = JsonToken.NOT_AVAILABLE);
+    }
+
+    private final JsonToken _nextDouble(int substate, long value) throws IOException, JsonParseException
+    {
+        while (_inputPtr < _inputEnd) {
+            int b = _inputBuffer[_inputPtr++];
+            value = (value << 7) + b;
+            if (++substate == 10) { // done!
+                _numberDouble = Double.longBitsToDouble(value);
+                _numTypesValid = NR_DOUBLE;
+                _tokenIncomplete = false;
+                return (_currToken = JsonToken.VALUE_NUMBER_FLOAT);
+            }
+        }
+        _tokenIncomplete = true;
+        _substate = substate;
+        _pendingLong = value;
+        return (_currToken = JsonToken.NOT_AVAILABLE);
+    }
+
+    private final JsonToken _nextBigDecimal(int substate) throws IOException, JsonParseException
+    {
+        // !!! TBI
+        return JsonToken.NOT_AVAILABLE;
+    }
+
+    private final JsonToken _nextHeader(int substate) throws IOException, JsonParseException
+    {
+        // !!! TBI
+        return JsonToken.NOT_AVAILABLE;
+    }
+
+    /*
+    private final boolean _finishBigInteger()
+        throws IOException, JsonParseException
+    {
+        byte[] raw = _read7BitBinaryWithLength();
+        if (raw == null) {
+            return false;
+        }
+        _numberBigInt = new BigInteger(raw);
+        _numTypesValid = NR_BIGINT;
+        return true;
+    }
+
+    
+    private final void _finishBigDecimal()
+        throws IOException, JsonParseException
+    {
+        int scale = SmileUtil.zigzagDecode(_readUnsignedVInt());
+        byte[] raw = _read7BitBinaryWithLength();
+        _numberBigDecimal = new BigDecimal(new BigInteger(raw), scale);
+        _numTypesValid = NR_BIGDECIMAL;
+    }
+    
+    private final int _readUnsignedVInt()
+        throws IOException, JsonParseException
+    {
+        int value = 0;
+        while (true) {
+            if (_inputPtr >= _inputEnd) {
+                loadMoreGuaranteed();
+            }
+            int i = _inputBuffer[_inputPtr++];
+            if (i < 0) { // last byte
+                value = (value << 6) + (i & 0x3F);
+                return value;
+            }
+            value = (value << 7) + i;
+        }
+    }
+    */
+    
     /*
     /**********************************************************************
     /* Public API, traversal, nextXxxValue/nextFieldName
@@ -1447,13 +1586,7 @@ public class NonBlockingParser
     	throws IOException, JsonParseException
     {
     	if (_tokenIncomplete) {
-    	    int tb = _typeByte;
-    	    // ensure we got a numeric type with value that is lazily parsed
-            if (((tb >> 5) & 0x7) != 1) {
-                _reportError("Current token ("+_currToken+") not numeric, can not use numeric value accessors");
-            }
-            _tokenIncomplete = false;
-            _finishNumberToken(tb);
+    	    _reportError("No current token available, can not call accessors");
     	}
     }
     
@@ -1461,240 +1594,28 @@ public class NonBlockingParser
      * Method called to finish parsing of a token so that token contents
      * are retriable
      */
-    protected boolean _finishToken()
+    protected final boolean _finishToken()
     	throws IOException, JsonParseException
     {
-        _tokenIncomplete = false;
-    	int tb = _typeByte;
-
-    	int type = ((tb >> 5) & 0x7);
-        if (type == 1) { // simple literals, numbers
-            return _finishNumberToken(tb);
-        }
-        if (type <= 3) { // tiny & short ASCII
-            return _decodeShortAsciiValue(1 + (tb & 0x3F));
-    	}
-        if (type <= 5) { // tiny & short Unicode
-             // short unicode; note, lengths 2 - 65  (off-by-one compared to ASCII)
-            return _decodeShortUnicodeValue(2 + (tb & 0x3F));
-    	}
-        if (type == 7) {
-            tb &= 0x1F;
-            // next 3 bytes define subtype
-            switch (tb >> 2) {
-            case 0: // long variable length ASCII
-                return _decodeLongAscii();
-            case 1: // long variable length unicode
-                return _decodeLongUnicode();
-            case 2: // binary, 7-bit
-                _binaryValue = _read7BitBinaryWithLength();
-                return;
-            case 7: // binary, raw
-                return _finishRawBinary();
-            }
+        switch (_state) {
+        case STATE_INITIAL:
+            return _nextHeader(_substate) != JsonToken.NOT_AVAILABLE;
+        case STATE_NUMBER_INT:
+            return _nextInt(_substate, _pendingInt) != JsonToken.NOT_AVAILABLE;
+        case STATE_NUMBER_LONG:
+            return _nextLong(_substate, _pendingLong) != JsonToken.NOT_AVAILABLE;
+        case STATE_NUMBER_BIGINT:
+            return _nextBigInt(_substate) != JsonToken.NOT_AVAILABLE;
+        case STATE_NUMBER_FLOAT:
+            return _nextFloat(_substate) != JsonToken.NOT_AVAILABLE;
+        case STATE_NUMBER_DOUBLE:
+            return _nextDouble(_substate) != JsonToken.NOT_AVAILABLE;
+        case STATE_NUMBER_BIGDEC:
+            return _nextBigDecimal(_substate) != JsonToken.NOT_AVAILABLE;
         }
         // sanity check
     	_throwInternal();
-    }
-
-    protected final boolean _finishNumberToken(int tb)
-        throws IOException, JsonParseException
-    {
-        tb &= 0x1F;
-        int type = (tb >> 2);
-        if (type == 1) { // VInt (zigzag) or BigDecimal
-            int subtype = tb & 0x03;
-            if (subtype == 0) { // (v)int
-                return _finishInt();
-            }
-            if (subtype == 1) { // (v)long
-                return _finishLong();
-            }
-            if (subtype == 2) {
-                return _finishBigInteger();
-            }
-            _throwInternal();
-        }
-        if (type == 2) { // other numbers
-            switch (tb & 0x03) {
-            case 0: // float
-                return _finishFloat();
-            case 1: // double
-                return _finishDouble();
-            case 2: // big-decimal
-                return _finishBigDecimal();
-            }
-        }
-        _throwInternal();
-    }
-    
-    /*
-    /**********************************************************************
-    /* Internal methods, secondary Number parsing
-    /**********************************************************************
-     */
-    
-    private final boolean _finishInt() throws IOException, JsonParseException
-    {
-    	if (_inputPtr >= _inputEnd) {
-    	    return false;
-    	}
-    	int value = _inputBuffer[_inputPtr++];
-    	int i;
-    	if (value < 0) { // 6 bits
-    		value &= 0x3F;
-    	} else {
-    	    if (_inputPtr >= _inputEnd) {
-                return false;
-    	    }
-    	    i = _inputBuffer[_inputPtr++];
-    	    if (i >= 0) { // 13 bits
-    	        value = (value << 7) + i;
-    	        if (_inputPtr >= _inputEnd) {
-    	            return false;
-    	        }
-    	        i = _inputBuffer[_inputPtr++];
-    	        if (i >= 0) {
-    	            value = (value << 7) + i;
-    	            if (_inputPtr >= _inputEnd) {
-    	                return false;
-    	            }
-    	            i = _inputBuffer[_inputPtr++];
-    	            if (i >= 0) {
-    	                value = (value << 7) + i;
-    	                // and then we must get negative
-    	                if (_inputPtr >= _inputEnd) {
-    	                    return false;
-    	                }
-    	                i = _inputBuffer[_inputPtr++];
-    	                if (i >= 0) {
-    	                    _reportError("Corrupt input; 32-bit VInt extends beyond 5 data bytes");
-    	                }
-    	            }
-    	        }
-    	    }
-    	    value = (value << 6) + (i & 0x3F);
-    	}
-        _numberInt = SmileUtil.zigzagDecode(value);
-    	_numTypesValid = NR_INT;
-    	return true;
-    }
-
-    private final boolean  _finishLong()
-        throws IOException, JsonParseException
-    {
-	// Ok, first, will always get 4 full data bytes first; 1 was already passed
-	long l = (long) _fourBytesToInt();
-    	// and loop for the rest
-    	while (true) {
-    	    if (_inputPtr >= _inputEnd) {
-                return false;
-    	    }
-    	    int value = _inputBuffer[_inputPtr++];
-    	    if (value < 0) {
-    	        l = (l << 6) + (value & 0x3F);
-    	        _numberLong = SmileUtil.zigzagDecode(l);
-    	        _numTypesValid = NR_LONG;
-    	        return true;
-    	    }
-    	    l = (l << 7) + value;
-    	}
-    }
-
-    private final boolean _finishBigInteger()
-        throws IOException, JsonParseException
-    {
-        byte[] raw = _read7BitBinaryWithLength();
-        if (raw == null) {
-            return false;
-        }
-        _numberBigInt = new BigInteger(raw);
-        _numTypesValid = NR_BIGINT;
-        return true;
-    }
-
-    private final boolean _finishFloat()
-        throws IOException, JsonParseException
-    {
-        // just need 5 bytes to get int32 first; all are unsigned
-    	int i = _fourBytesToInt();
-    	if (_inputPtr >= _inputEnd) {
-            return false;
-    	}
-    	i = (i << 7) + _inputBuffer[_inputPtr++];
-    	float f = Float.intBitsToFloat(i);
-	_numberDouble = (double) f;
-	_numTypesValid = NR_DOUBLE;
-	return true;
-    }
-
-    private final boolean _finishDouble()
-	throws IOException, JsonParseException
-    {
-        // ok; let's take two sets of 4 bytes (each is int)
-	long hi = _fourBytesToInt();
-	long value = (hi << 28) + (long) _fourBytesToInt();
-	// and then remaining 2 bytes
-	if (_inputPtr >= _inputEnd) {
-            return false;
-	}
-	value = (value << 7) + _inputBuffer[_inputPtr++];
-	if (_inputPtr >= _inputEnd) {
-            return false;
-	}
-	value = (value << 7) + _inputBuffer[_inputPtr++];
-	_numberDouble = Double.longBitsToDouble(value);
-	_numTypesValid = NR_DOUBLE;
-	return true;
-    }
-
-    /*
-    private final int _fourBytesToInt() 
-        throws IOException, JsonParseException
-    {
-	if (_inputPtr >= _inputEnd) {
-		loadMoreGuaranteed();
-	}
-	int i = _inputBuffer[_inputPtr++]; // first 7 bits
-	if (_inputPtr >= _inputEnd) {
-		loadMoreGuaranteed();
-	}
-	i = (i << 7) + _inputBuffer[_inputPtr++]; // 14 bits
-	if (_inputPtr >= _inputEnd) {
-		loadMoreGuaranteed();
-	}
-	i = (i << 7) + _inputBuffer[_inputPtr++]; // 21
-	if (_inputPtr >= _inputEnd) {
-		loadMoreGuaranteed();
-	}
-	return (i << 7) + _inputBuffer[_inputPtr++];
-    }
-    */
-	
-    private final void _finishBigDecimal()
-        throws IOException, JsonParseException
-    {
-        int scale = SmileUtil.zigzagDecode(_readUnsignedVInt());
-        byte[] raw = _read7BitBinaryWithLength();
-        _numberBigDecimal = new BigDecimal(new BigInteger(raw), scale);
-        _numTypesValid = NR_BIGDECIMAL;
-    }
-
-    private final int _readUnsignedVInt()
-        throws IOException, JsonParseException
-    {
-        int value = 0;
-        while (true) {
-            if (_inputPtr >= _inputEnd) {
-                loadMoreGuaranteed();
-            }
-            int i = _inputBuffer[_inputPtr++];
-            if (i < 0) { // last byte
-                value = (value << 6) + (i & 0x3F);
-                return value;
-            }
-            value = (value << 7) + i;
-        }
+    	return false; // never gets here
     }
 
     private final byte[] _read7BitBinaryWithLength()
@@ -1972,149 +1893,6 @@ public class NonBlockingParser
             }
             loadMoreGuaranteed();
         }
-    }
-
-    /*
-    /**********************************************************************
-    /* Internal methods, skipping
-    /**********************************************************************
-     */
-
-    /**
-     * Method called to skip remainders of an incomplete token, when
-     * contents themselves will not be needed any more
-     * 
-     * @return If skipping succeeded (enough content was available); false if not
-     */
-    protected boolean _skipIncomplete() throws IOException, JsonParseException
-    {
-        switch (_state) {
-        case STATE_INITIAL:
-            _handleHeader(true);
-        case STATE_HEADER:
-            _handleHeader(false);
-        }
-        
-    	_tokenIncomplete = false;
-    	int tb = _typeByte;
-        switch ((tb >> 5) & 0x7) {
-        case 1: // simple literals, numbers
-            tb &= 0x1F;
-            // next 3 bytes define subtype
-            switch (tb >> 2) {
-            case 1: // VInt (zigzag)
-                // easy, just skip until we see sign bit... (should we try to limit damage?)
-                switch (tb & 0x3) {
-                case 1: // vlong
-                        _skipBytes(4); // min 5 bytes
-                        // fall through
-                case 0: // vint
-                    while (true) {
-                        final int end = _inputEnd;
-                        final byte[] buf = _inputBuffer;
-                        while (_inputPtr < end) {
-                                if (buf[_inputPtr++] < 0) {
-                                    return;
-                                }
-                        }
-                        loadMoreGuaranteed();                           
-                    }
-                case 2: // big-int
-                    // just has binary data
-                    _skip7BitBinary();
-                    return;
-                }
-                break;
-            case 2: // other numbers
-                switch (tb & 0x3) {
-                case 0: // float
-                    _skipBytes(5);
-                    return;
-                case 1: // double
-                    _skipBytes(10);
-                    return;
-                case 2: // big-decimal
-                    // first, skip scale
-                    _readUnsignedVInt();
-                    // then length-prefixed binary serialization
-                    _skip7BitBinary();
-                    return;
-                }
-                break;
-            }
-            break;
-        case 2: // tiny ASCII
-            // fall through
-        case 3: // short ASCII
-            _skipBytes(1 + (tb & 0x3F));
-            return;
-        case 4: // tiny unicode
-            // fall through
-        case 5: // short unicode
-            _skipBytes(2 + (tb & 0x3F));
-            return;
-        case 7:
-            tb &= 0x1F;
-            // next 3 bytes define subtype
-            switch (tb >> 2) {
-            case 0: // long variable length ASCII
-            case 1: // long variable length unicode
-            	/* Doesn't matter which one, just need to find the end marker
-            	 * (note: can potentially skip invalid UTF-8 too)
-            	 */
-            	while (true) {
-            	    final int end = _inputEnd;
-            	    final byte[] buf = _inputBuffer;
-            	    while (_inputPtr < end) {
-            	        if (buf[_inputPtr++] == BYTE_MARKER_END_OF_STRING) {
-            	            return;
-            	        }
-            	    }
-            	    loadMoreGuaranteed();
-            	}
-            	// never gets here
-            case 2: // binary, 7-bit
-                _skip7BitBinary();
-                return;
-            case 7: // binary, raw
-                _skipBytes(_readUnsignedVInt());
-                return;
-            }
-        }
-    	_throwInternal();
-    }
-
-    protected void _skipBytes(int len)
-        throws IOException, JsonParseException
-    {
-        while (true) {
-            int toAdd = Math.min(len, _inputEnd - _inputPtr);
-            _inputPtr += toAdd;
-            len -= toAdd;
-            if (len <= 0) {
-                return;
-            }
-            loadMoreGuaranteed();
-        }
-    }
-
-    /**
-     * Helper method for skipping length-prefixed binary data
-     * section
-     */
-    protected void _skip7BitBinary()
-        throws IOException, JsonParseException
-    {
-        int origBytes = _readUnsignedVInt();
-        // Ok; 8 encoded bytes for 7 payload bytes first
-        int chunks = origBytes / 7;
-        int encBytes = chunks * 8;
-        // and for last 0 - 6 bytes, last+1 (except none if no leftovers)
-        origBytes -= 7 * chunks;
-        if (origBytes > 0) {
-            encBytes += 1 + origBytes;
-        }
-        _skipBytes(encBytes);
     }
     
     /*
