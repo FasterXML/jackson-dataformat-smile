@@ -13,7 +13,7 @@ import java.io.IOException;
  * 
  * @author Tatu Saloranta
  */
-public interface AsyncInputFeeder
+public interface NonBlockingInputFeeder
 {
     /**
      * Method called to check whether it is ok to feed more data: parser returns true
