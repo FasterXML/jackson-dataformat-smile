@@ -37,22 +37,16 @@ public class NonBlockingParserImpl
      */
     protected final static int STATE_INITIAL = 0;
 
-    /**
-     * State in which we are expecting a value token of some
-     * kind (as opposed to a field name)
-     */
-    protected final static int STATE_EXPECT_VALUE = 1;
-    
-    /**
-     * State in which we are expecting a field name token,
-     * or end-object.
-     */
-    protected final static int STATE_EXPECT_NAME = 2;
 
     /**
-     * State for recognized header marker, either in-feed or
+     * State for recognized header marker, either in-feed or initial.
      */
-    protected final static int STATE_HEADER = 3;
+    protected final static int STATE_HEADER = 1;
+    
+    /**
+     * State in which we are right after decoding a full token.
+     */
+    protected final static int STATE_TOKEN_COMPLETE = 2;
     
     // // // States for decoding numbers:
     protected final static int STATE_NUMBER_INT = 10;
@@ -62,6 +56,12 @@ public class NonBlockingParserImpl
     protected final static int STATE_NUMBER_DOUBLE = 14;
     protected final static int STATE_NUMBER_BIGDEC = 15;
 
+    protected final static int STATE_LONG_ASCII = 20;
+    protected final static int STATE_LONG_UNICODE = 21;
+    protected final static int STATE_LONG_SHARED = 22;
+    protected final static int STATE_RAW_BINARY = 23;
+    protected final static int STATE_QUOTED_BINARY = 24;
+    
     /*
     /**********************************************************************
     /* Configuration
@@ -529,7 +529,6 @@ public class NonBlockingParserImpl
             return (_currToken = _handleFieldName());
         }
         if (_inputPtr >= _inputEnd) {
-            _state = STATE_EXPECT_VALUE;
             return JsonToken.NOT_AVAILABLE;
         }
         int ch = _inputBuffer[_inputPtr++];
@@ -602,6 +601,8 @@ public class NonBlockingParserImpl
             // fall through            
         case 3: // short ASCII
             // fall through
+            return _nextShortAscii(0);
+
         case 4: // tiny Unicode
             // fall through
         case 5: // short Unicode
@@ -612,7 +613,8 @@ public class NonBlockingParserImpl
             } else {
                 _tokenIncomplete = true;
             }
-            return _currToken;
+            return _nextShortUnicode(0);
+
         case 6: // small integers; zigzag encoded
             _numberInt = SmileUtil.zigzagDecode(ch & 0x1F);
             _numTypesValid = NR_INT;
@@ -620,20 +622,17 @@ public class NonBlockingParserImpl
         case 7: // binary/long-text/long-shared/start-end-markers
             switch (ch & 0x1F) {
             case 0x00: // long variable length ASCII
+                return _nextLongAscii(0);
             case 0x04: // long variable length unicode
-                _tokenIncomplete = true;
-                return (_currToken = JsonToken.VALUE_STRING);
+                return _nextLongUnicode(0);
             case 0x08: // binary, 7-bit
-                _tokenIncomplete = true;
-                return (_currToken = JsonToken.VALUE_EMBEDDED_OBJECT);
+                return _nextQuotedBinary(0);
             case 0x0C: // long shared string
             case 0x0D:
             case 0x0E:
             case 0x0F:
-                if (_inputPtr >= _inputEnd) {
-                    loadMoreGuaranteed();
-                }
-                return _handleSharedString(((ch & 0x3) << 8) + (_inputBuffer[_inputPtr++] & 0xFF));
+                return _nextLongSharedString(0);
+//                return _handleSharedString(((ch & 0x3) << 8) + (_inputBuffer[_inputPtr++] & 0xFF));
             case 0x18: // START_ARRAY
                 _parsingContext = _parsingContext.createChildArrayContext(-1, -1);
                 return (_currToken = JsonToken.START_ARRAY);
@@ -649,8 +648,8 @@ public class NonBlockingParserImpl
             case 0x1B: // not used in this mode; would be END_OBJECT
                 _reportError("Invalid type marker byte 0xFB in value mode (would be END_OBJECT in key mode)");
             case 0x1D: // binary, raw
-                _tokenIncomplete = true;
-                return (_currToken = JsonToken.VALUE_EMBEDDED_OBJECT);
+                // should we validate this is legal? (as per header)
+                return _nextRawBinary(0);
             case 0x1F: // 0xFF, end of content
                 return (_currToken = null);
             }
@@ -771,8 +770,6 @@ public class NonBlockingParserImpl
         switch (_state) {
         case STATE_INITIAL: // the case if no input has yet been fed
             return JsonToken.NOT_AVAILABLE;
-        case STATE_EXPECT_VALUE: // these states should not have _tokenIncomplete, but:
-        case STATE_EXPECT_NAME:
         case STATE_HEADER:
             return JsonToken.NOT_AVAILABLE;
         case STATE_NUMBER_INT:
@@ -793,7 +790,7 @@ public class NonBlockingParserImpl
      */
 
     private final JsonToken _nextInt(int substate, int value)
-            throws IOException, JsonParseException
+        throws IOException, JsonParseException
     {
         while (_inputPtr < _inputEnd) {
             int b = _inputBuffer[_inputPtr++];
@@ -814,6 +811,7 @@ public class NonBlockingParserImpl
         _tokenIncomplete = true;
         _substate = substate;
         _pendingInt = value;
+        _state = STATE_NUMBER_INT;
         return (_currToken = JsonToken.NOT_AVAILABLE);
     }
 
@@ -838,15 +836,33 @@ public class NonBlockingParserImpl
         _tokenIncomplete = true;
         _substate = substate;
         _pendingLong = value;
+        _state = STATE_NUMBER_LONG;
         return (_currToken = JsonToken.NOT_AVAILABLE);
     }
 
     private final JsonToken _nextBigInt(int substate) throws IOException, JsonParseException
     {
-        
         // !!! TBI
-        return JsonToken.NOT_AVAILABLE;
+        _tokenIncomplete = true;
+        _substate = substate;
+//        _pendingLong = value;
+        _state = STATE_NUMBER_BIGDEC;
+        return (_currToken = JsonToken.NOT_AVAILABLE);
     }
+
+    /*
+    private final boolean _finishBigInteger()
+        throws IOException, JsonParseException
+    {
+        byte[] raw = _read7BitBinaryWithLength();
+        if (raw == null) {
+            return false;
+        }
+        _numberBigInt = new BigInteger(raw);
+        _numTypesValid = NR_BIGINT;
+        return true;
+    }
+*/
     
     private final JsonToken _nextFloat(int substate, int value) throws IOException, JsonParseException
     {
@@ -863,6 +879,7 @@ public class NonBlockingParserImpl
         _tokenIncomplete = true;
         _substate = substate;
         _pendingInt = value;
+        _state = STATE_NUMBER_FLOAT;
         return (_currToken = JsonToken.NOT_AVAILABLE);
     }
 
@@ -881,15 +898,50 @@ public class NonBlockingParserImpl
         _tokenIncomplete = true;
         _substate = substate;
         _pendingLong = value;
+        _state = STATE_NUMBER_DOUBLE;
         return (_currToken = JsonToken.NOT_AVAILABLE);
     }
 
     private final JsonToken _nextBigDecimal(int substate) throws IOException, JsonParseException
     {
         // !!! TBI
-        return JsonToken.NOT_AVAILABLE;
+        _tokenIncomplete = true;
+        _substate = substate;
+//        _pendingLong = value;
+        _state = STATE_NUMBER_BIGDEC;
+        return (_currToken = JsonToken.NOT_AVAILABLE);
     }
+/*
+    private final void _finishBigDecimal()
+        throws IOException, JsonParseException
+    {
+        int scale = SmileUtil.zigzagDecode(_readUnsignedVInt());
+        byte[] raw = _read7BitBinaryWithLength();
+        _numberBigDecimal = new BigDecimal(new BigInteger(raw), scale);
+        _numTypesValid = NR_BIGDECIMAL;
+    }
+    
+ */
 
+    /*
+    private final int _readUnsignedVInt()
+        throws IOException, JsonParseException
+    {
+        int value = 0;
+        while (true) {
+            if (_inputPtr >= _inputEnd) {
+                loadMoreGuaranteed();
+            }
+            int i = _inputBuffer[_inputPtr++];
+            if (i < 0) { // last byte
+                value = (value << 6) + (i & 0x3F);
+                return value;
+            }
+            value = (value << 7) + i;
+        }
+    }
+    */
+    
     private final boolean _handleHeader(int substate) throws IOException, JsonParseException
     {
         while (_inputPtr < _inputEnd) {
@@ -925,55 +977,323 @@ public class NonBlockingParserImpl
                     _seenStringValueCount = 0;
                 }
                 _mayContainRawBinary = ((b & SmileConstants.HEADER_BIT_HAS_RAW_BINARY) != 0);
+                _tokenIncomplete = false;
                 return true;
             }
         }
+        _tokenIncomplete = true;
         _state = STATE_HEADER;
         _substate = substate;
         return false;
     }
+ccc
+    /*
+    protected final void _decodeShortAsciiValue(int len)
+        throws IOException, JsonParseException
+    {
+        if ((_inputEnd - _inputPtr) < len) {
+            _loadToHaveAtLeast(len);
+        }
+        // Note: we count on fact that buffer must have at least 'len' (<= 64) empty char slots
+        final char[] outBuf = _textBuffer.emptyAndGetCurrentSegment();
+        int outPtr = 0;
+        final byte[] inBuf = _inputBuffer;
+        int inPtr = _inputPtr;
+
+        // meaning: regular tight loop is no slower, typically faster here:
+        for (final int end = inPtr + len; inPtr < end; ++inPtr) {
+            outBuf[outPtr++] = (char) inBuf[inPtr];            
+        }
+        
+        _inputPtr = inPtr;
+        _textBuffer.setCurrentLength(len);
+    }
+
+    protected final void _decodeShortUnicodeValue(int len)
+        throws IOException, JsonParseException
+    {
+        if ((_inputEnd - _inputPtr) < len) {
+            _loadToHaveAtLeast(len);
+        }
+        int outPtr = 0;
+        char[] outBuf = _textBuffer.emptyAndGetCurrentSegment();
+        int inPtr = _inputPtr;
+        _inputPtr += len;
+        final int[] codes = SmileConstants.sUtf8UnitLengths;
+        final byte[] inputBuf = _inputBuffer;
+        for (int end = inPtr + len; inPtr < end; ) {
+            int i = inputBuf[inPtr++] & 0xFF;
+            int code = codes[i];
+            if (code != 0) {
+                // trickiest one, need surrogate handling
+                switch (code) {
+                case 1:
+                    i = ((i & 0x1F) << 6) | (inputBuf[inPtr++] & 0x3F);
+                    break;
+                case 2:
+                    i = ((i & 0x0F) << 12)
+                          | ((inputBuf[inPtr++] & 0x3F) << 6)
+                          | (inputBuf[inPtr++] & 0x3F);
+                    break;
+                case 3:
+                    i = ((i & 0x07) << 18)
+                        | ((inputBuf[inPtr++] & 0x3F) << 12)
+                        | ((inputBuf[inPtr++] & 0x3F) << 6)
+                        | (inputBuf[inPtr++] & 0x3F);
+                    // note: this is the codepoint value; need to split, too
+                    i -= 0x10000;
+                    outBuf[outPtr++] = (char) (0xD800 | (i >> 10));
+                    i = 0xDC00 | (i & 0x3FF);
+                    break;
+                default: // invalid
+                    _reportError("Invalid byte "+Integer.toHexString(i)+" in short Unicode text block");
+                }
+            }
+            outBuf[outPtr++] = (char) i;
+        }        
+        _textBuffer.setCurrentLength(outPtr);
+    }
+     */
+    
+    private final JsonToken _nextLongAscii(int substate) throws IOException, JsonParseException
+    {
+        // did not get it all; mark the state so we know where to return:
+        _state = STATE_LONG_ASCII;
+        _tokenIncomplete = true;
+        _substate = substate;
+        return (_currToken = JsonToken.NOT_AVAILABLE);
+    }
 
     /*
-    private final boolean _finishBigInteger()
+    private final void _decodeLongAscii()
         throws IOException, JsonParseException
     {
-        byte[] raw = _read7BitBinaryWithLength();
-        if (raw == null) {
-            return false;
-        }
-        _numberBigInt = new BigInteger(raw);
-        _numTypesValid = NR_BIGINT;
-        return true;
-    }
-
-    
-    private final void _finishBigDecimal()
-        throws IOException, JsonParseException
-    {
-        int scale = SmileUtil.zigzagDecode(_readUnsignedVInt());
-        byte[] raw = _read7BitBinaryWithLength();
-        _numberBigDecimal = new BigDecimal(new BigInteger(raw), scale);
-        _numTypesValid = NR_BIGDECIMAL;
-    }
-    
-    private final int _readUnsignedVInt()
-        throws IOException, JsonParseException
-    {
-        int value = 0;
+        int outPtr = 0;
+        char[] outBuf = _textBuffer.emptyAndGetCurrentSegment();
+        main_loop:
         while (true) {
             if (_inputPtr >= _inputEnd) {
                 loadMoreGuaranteed();
             }
-            int i = _inputBuffer[_inputPtr++];
-            if (i < 0) { // last byte
-                value = (value << 6) + (i & 0x3F);
-                return value;
+            int inPtr = _inputPtr;
+            int left = _inputEnd - inPtr;
+            if (outPtr >= outBuf.length) {
+                outBuf = _textBuffer.finishCurrentSegment();
+                outPtr = 0;
             }
-            value = (value << 7) + i;
+            left = Math.min(left, outBuf.length - outPtr);
+            do {
+                byte b = _inputBuffer[inPtr++];
+                if (b == SmileConstants.BYTE_MARKER_END_OF_STRING) {
+                    _inputPtr = inPtr;
+                    break main_loop;
+                }
+                outBuf[outPtr++] = (char) b;                    
+            } while (--left > 0);
+            _inputPtr = inPtr;
         }
+        _textBuffer.setCurrentLength(outPtr);
     }
     */
+
+    private final JsonToken _nextLongUnicode(int substate) throws IOException, JsonParseException
+    {
+        // did not get it all; mark the state so we know where to return:
+        _state = STATE_LONG_UNICODE;
+        _tokenIncomplete = true;
+        _substate = substate;
+        return (_currToken = JsonToken.NOT_AVAILABLE);
+    }
+
     
+/*
+    private final void _decodeLongUnicode()
+        throws IOException, JsonParseException
+    {
+        int outPtr = 0;
+        char[] outBuf = _textBuffer.emptyAndGetCurrentSegment();
+        final int[] codes = SmileConstants.sUtf8UnitLengths;
+        int c;
+        final byte[] inputBuffer = _inputBuffer;
+
+        main_loop:
+        while (true) {
+            // First the tight ASCII loop:
+            ascii_loop:
+            while (true) {
+                int ptr = _inputPtr;
+                if (ptr >= _inputEnd) {
+                    loadMoreGuaranteed();
+                    ptr = _inputPtr;
+                }
+                if (outPtr >= outBuf.length) {
+                    outBuf = _textBuffer.finishCurrentSegment();
+                    outPtr = 0;
+                }
+                int max = _inputEnd;
+                {
+                    int max2 = ptr + (outBuf.length - outPtr);
+                    if (max2 < max) {
+                        max = max2;
+                    }
+                }
+                while (ptr < max) {
+                    c = (int) inputBuffer[ptr++] & 0xFF;
+                    if (codes[c] != 0) {
+                        _inputPtr = ptr;
+                        break ascii_loop;
+                    }
+                    outBuf[outPtr++] = (char) c;
+                }
+                _inputPtr = ptr;
+            }
+            // Ok: end marker, escape or multi-byte?
+            if (c == SmileConstants.INT_MARKER_END_OF_STRING) {
+                break main_loop;
+            }
+
+            switch (codes[c]) {
+            case 1: // 2-byte UTF
+                c = _decodeUtf8_2(c);
+                break;
+            case 2: // 3-byte UTF
+                if ((_inputEnd - _inputPtr) >= 2) {
+                    c = _decodeUtf8_3fast(c);
+                } else {
+                    c = _decodeUtf8_3(c);
+                }
+                break;
+            case 3: // 4-byte UTF
+                c = _decodeUtf8_4(c);
+                // Let's add first part right away:
+                outBuf[outPtr++] = (char) (0xD800 | (c >> 10));
+                if (outPtr >= outBuf.length) {
+                    outBuf = _textBuffer.finishCurrentSegment();
+                    outPtr = 0;
+                }
+                c = 0xDC00 | (c & 0x3FF);
+                // And let the other char output down below
+                break;
+            default:
+                // Is this good enough error message?
+                _reportInvalidChar(c);
+            }
+            // Need more room?
+            if (outPtr >= outBuf.length) {
+                outBuf = _textBuffer.finishCurrentSegment();
+                outPtr = 0;
+            }
+            // Ok, let's add char to output:
+            outBuf[outPtr++] = (char) c;
+        }
+        _textBuffer.setCurrentLength(outPtr);
+    }
+     */
+    
+    private final JsonToken _nextLongSharedString(int substate) throws IOException, JsonParseException
+    {
+        // did not get it all; mark the state so we know where to return:
+        _tokenIncomplete = true;
+        _state = STATE_LONG_SHARED;
+        _substate = substate;
+        return (_currToken = JsonToken.NOT_AVAILABLE);
+    }
+ccc
+    private final JsonToken _nextRawBinary(int substate) throws IOException, JsonParseException
+    {
+        // did not get it all; mark the state so we know where to return:
+        _tokenIncomplete = true;
+        _state = STATE_RAW_BINARY;
+        _substate = substate;
+        return (_currToken = JsonToken.NOT_AVAILABLE);
+    }
+
+/*
+
+    private final void _finishRawBinary()
+        throws IOException, JsonParseException
+    {
+        int byteLen = _readUnsignedVInt();
+        _binaryValue = new byte[byteLen];
+        if (_inputPtr >= _inputEnd) {
+            loadMoreGuaranteed();
+        }
+        int ptr = 0;
+        while (true) {
+            int toAdd = Math.min(byteLen, _inputEnd - _inputPtr);
+            System.arraycopy(_inputBuffer, _inputPtr, _binaryValue, ptr, toAdd);
+            _inputPtr += toAdd;
+            ptr += toAdd;
+            byteLen -= toAdd;
+            if (byteLen <= 0) {
+                return;
+            }
+            loadMoreGuaranteed();
+        }
+    }
+ */
+    
+    private final JsonToken _nextQuotedBinary(int substate) throws IOException, JsonParseException
+    {
+        // did not get it all; mark the state so we know where to return:
+        _tokenIncomplete = true;
+        _state = STATE_QUOTED_BINARY;
+        _substate = substate;
+        return (_currToken = JsonToken.NOT_AVAILABLE);
+    }
+    
+    /*
+    private final byte[] _read7BitBinaryWithLength()
+        throws IOException, JsonParseException
+    {
+        int byteLen = _readUnsignedVInt();
+        byte[] result = new byte[byteLen];
+        int ptr = 0;
+        int lastOkPtr = byteLen - 7;
+        
+        // first, read all 7-by-8 byte chunks
+        while (ptr <= lastOkPtr) {
+            if ((_inputEnd - _inputPtr) < 8) {
+                _loadToHaveAtLeast(8);
+            }
+            int i1 = (_inputBuffer[_inputPtr++] << 25)
+                + (_inputBuffer[_inputPtr++] << 18)
+                + (_inputBuffer[_inputPtr++] << 11)
+                + (_inputBuffer[_inputPtr++] << 4);
+            int x = _inputBuffer[_inputPtr++];
+            i1 += x >> 3;
+            int i2 = ((x & 0x7) << 21)
+                + (_inputBuffer[_inputPtr++] << 14)
+                + (_inputBuffer[_inputPtr++] << 7)
+                + _inputBuffer[_inputPtr++];
+            // Ok: got our 7 bytes, just need to split, copy
+            result[ptr++] = (byte)(i1 >> 24);
+            result[ptr++] = (byte)(i1 >> 16);
+            result[ptr++] = (byte)(i1 >> 8);
+            result[ptr++] = (byte)i1;
+            result[ptr++] = (byte)(i2 >> 16);
+            result[ptr++] = (byte)(i2 >> 8);
+            result[ptr++] = (byte)i2;
+        }
+        // and then leftovers: n+1 bytes to decode n bytes
+        int toDecode = (result.length - ptr);
+        if (toDecode > 0) {
+            if ((_inputEnd - _inputPtr) < (toDecode+1)) {
+                _loadToHaveAtLeast(toDecode+1);
+            }
+            int value = _inputBuffer[_inputPtr++];
+            for (int i = 1; i < toDecode; ++i) {
+                value = (value << 7) + _inputBuffer[_inputPtr++];
+                result[ptr++] = (byte) (value >> (7 - i));
+            }
+            // last byte is different, has remaining 1 - 6 bits, right-aligned
+            value <<= toDecode;
+            result[ptr] = (byte) (value + _inputBuffer[_inputPtr++]);
+        }
+        return result;
+    }
+     */
+
     /*
     /**********************************************************************
     /* Public API, traversal, nextXxxValue/nextFieldName
@@ -1676,7 +1996,6 @@ public class NonBlockingParserImpl
                 }
                 // if handled, get next byte to code (if available)
                 if (_inputPtr >= _inputEnd) {
-                    _state = STATE_EXPECT_VALUE;
                     return JsonToken.NOT_AVAILABLE;
                 }
                 b = _inputBuffer[_inputPtr++];
@@ -1696,17 +2015,17 @@ public class NonBlockingParserImpl
                     throw new JsonParseException(msg, JsonLocation.NA);
                 }
             }
-            // otherwise, fall through, with byte
-            _state = STATE_EXPECT_VALUE;
+            // otherwise, fall through, with byte (_handleHeader has set _state)
         } else if (_state == STATE_HEADER) { // in-stream header
             if (!_handleHeader(_substate)) {
                 return JsonToken.NOT_AVAILABLE;
             }
+            // is it enough to leave '_tokenIncomplete' false here?
             if (_inputPtr >= _inputEnd) {
-                _state = STATE_EXPECT_VALUE;
                 return JsonToken.NOT_AVAILABLE;
             }
             b = _inputBuffer[_inputPtr++];
+            // fall through
         }
 
         switch (_state) {
@@ -1727,262 +2046,6 @@ public class NonBlockingParserImpl
         return null;
     }
 
-    private final byte[] _read7BitBinaryWithLength()
-        throws IOException, JsonParseException
-    {
-        int byteLen = _readUnsignedVInt();
-        byte[] result = new byte[byteLen];
-        int ptr = 0;
-        int lastOkPtr = byteLen - 7;
-        
-        // first, read all 7-by-8 byte chunks
-        while (ptr <= lastOkPtr) {
-            if ((_inputEnd - _inputPtr) < 8) {
-                _loadToHaveAtLeast(8);
-            }
-            int i1 = (_inputBuffer[_inputPtr++] << 25)
-                + (_inputBuffer[_inputPtr++] << 18)
-                + (_inputBuffer[_inputPtr++] << 11)
-                + (_inputBuffer[_inputPtr++] << 4);
-            int x = _inputBuffer[_inputPtr++];
-            i1 += x >> 3;
-            int i2 = ((x & 0x7) << 21)
-                + (_inputBuffer[_inputPtr++] << 14)
-                + (_inputBuffer[_inputPtr++] << 7)
-                + _inputBuffer[_inputPtr++];
-            // Ok: got our 7 bytes, just need to split, copy
-            result[ptr++] = (byte)(i1 >> 24);
-            result[ptr++] = (byte)(i1 >> 16);
-            result[ptr++] = (byte)(i1 >> 8);
-            result[ptr++] = (byte)i1;
-            result[ptr++] = (byte)(i2 >> 16);
-            result[ptr++] = (byte)(i2 >> 8);
-            result[ptr++] = (byte)i2;
-        }
-        // and then leftovers: n+1 bytes to decode n bytes
-        int toDecode = (result.length - ptr);
-        if (toDecode > 0) {
-            if ((_inputEnd - _inputPtr) < (toDecode+1)) {
-                _loadToHaveAtLeast(toDecode+1);
-            }
-            int value = _inputBuffer[_inputPtr++];
-            for (int i = 1; i < toDecode; ++i) {
-                value = (value << 7) + _inputBuffer[_inputPtr++];
-                result[ptr++] = (byte) (value >> (7 - i));
-            }
-            // last byte is different, has remaining 1 - 6 bits, right-aligned
-            value <<= toDecode;
-            result[ptr] = (byte) (value + _inputBuffer[_inputPtr++]);
-        }
-        return result;
-    }
-    
-    /*
-    /**********************************************************************
-    /* Internal methods, secondary String parsing
-    /**********************************************************************
-     */
-
-    protected final void _decodeShortAsciiValue(int len)
-        throws IOException, JsonParseException
-    {
-        if ((_inputEnd - _inputPtr) < len) {
-            _loadToHaveAtLeast(len);
-        }
-        // Note: we count on fact that buffer must have at least 'len' (<= 64) empty char slots
-	final char[] outBuf = _textBuffer.emptyAndGetCurrentSegment();
-        int outPtr = 0;
-        final byte[] inBuf = _inputBuffer;
-	int inPtr = _inputPtr;
-
-	// meaning: regular tight loop is no slower, typically faster here:
-	for (final int end = inPtr + len; inPtr < end; ++inPtr) {
-            outBuf[outPtr++] = (char) inBuf[inPtr];            
-        }
-	
-        _inputPtr = inPtr;
-	_textBuffer.setCurrentLength(len);
-    }
-
-    protected final void _decodeShortUnicodeValue(int len)
-        throws IOException, JsonParseException
-    {
-        if ((_inputEnd - _inputPtr) < len) {
-	    _loadToHaveAtLeast(len);
-	}
-        int outPtr = 0;
-        char[] outBuf = _textBuffer.emptyAndGetCurrentSegment();
-        int inPtr = _inputPtr;
-        _inputPtr += len;
-        final int[] codes = SmileConstants.sUtf8UnitLengths;
-        final byte[] inputBuf = _inputBuffer;
-        for (int end = inPtr + len; inPtr < end; ) {
-            int i = inputBuf[inPtr++] & 0xFF;
-            int code = codes[i];
-            if (code != 0) {
-                // trickiest one, need surrogate handling
-                switch (code) {
-                case 1:
-                    i = ((i & 0x1F) << 6) | (inputBuf[inPtr++] & 0x3F);
-                    break;
-	        case 2:
-	            i = ((i & 0x0F) << 12)
-	                  | ((inputBuf[inPtr++] & 0x3F) << 6)
-	                  | (inputBuf[inPtr++] & 0x3F);
-	            break;
-	        case 3:
-	            i = ((i & 0x07) << 18)
-	                | ((inputBuf[inPtr++] & 0x3F) << 12)
-	                | ((inputBuf[inPtr++] & 0x3F) << 6)
-	                | (inputBuf[inPtr++] & 0x3F);
-	            // note: this is the codepoint value; need to split, too
-	            i -= 0x10000;
-	            outBuf[outPtr++] = (char) (0xD800 | (i >> 10));
-	            i = 0xDC00 | (i & 0x3FF);
-	            break;
-	        default: // invalid
-	            _reportError("Invalid byte "+Integer.toHexString(i)+" in short Unicode text block");
-                }
-	    }
-	    outBuf[outPtr++] = (char) i;
-        }        
-        _textBuffer.setCurrentLength(outPtr);
-    }
-
-    private final void _decodeLongAscii()
-        throws IOException, JsonParseException
-    {
-        int outPtr = 0;
-        char[] outBuf = _textBuffer.emptyAndGetCurrentSegment();
-        main_loop:
-        while (true) {
-            if (_inputPtr >= _inputEnd) {
-                loadMoreGuaranteed();
-            }
-            int inPtr = _inputPtr;
-            int left = _inputEnd - inPtr;
-            if (outPtr >= outBuf.length) {
-                outBuf = _textBuffer.finishCurrentSegment();
-                outPtr = 0;
-            }
-            left = Math.min(left, outBuf.length - outPtr);
-            do {
-                byte b = _inputBuffer[inPtr++];
-                if (b == SmileConstants.BYTE_MARKER_END_OF_STRING) {
-                    _inputPtr = inPtr;
-                    break main_loop;
-                }
-                outBuf[outPtr++] = (char) b;	    		
-            } while (--left > 0);
-            _inputPtr = inPtr;
-        }
-        _textBuffer.setCurrentLength(outPtr);
-    }
-
-    private final void _decodeLongUnicode()
-        throws IOException, JsonParseException
-    {
-	int outPtr = 0;
-	char[] outBuf = _textBuffer.emptyAndGetCurrentSegment();
-	final int[] codes = SmileConstants.sUtf8UnitLengths;
-        int c;
-        final byte[] inputBuffer = _inputBuffer;
-
-        main_loop:
-        while (true) {
-            // First the tight ASCII loop:
-            ascii_loop:
-            while (true) {
-                int ptr = _inputPtr;
-                if (ptr >= _inputEnd) {
-                    loadMoreGuaranteed();
-                    ptr = _inputPtr;
-                }
-                if (outPtr >= outBuf.length) {
-                    outBuf = _textBuffer.finishCurrentSegment();
-                    outPtr = 0;
-                }
-                int max = _inputEnd;
-                {
-                    int max2 = ptr + (outBuf.length - outPtr);
-                    if (max2 < max) {
-                        max = max2;
-                    }
-                }
-                while (ptr < max) {
-                    c = (int) inputBuffer[ptr++] & 0xFF;
-                    if (codes[c] != 0) {
-                        _inputPtr = ptr;
-                        break ascii_loop;
-                    }
-                    outBuf[outPtr++] = (char) c;
-                }
-                _inputPtr = ptr;
-            }
-            // Ok: end marker, escape or multi-byte?
-            if (c == SmileConstants.INT_MARKER_END_OF_STRING) {
-                break main_loop;
-            }
-
-            switch (codes[c]) {
-            case 1: // 2-byte UTF
-                c = _decodeUtf8_2(c);
-                break;
-            case 2: // 3-byte UTF
-                if ((_inputEnd - _inputPtr) >= 2) {
-                    c = _decodeUtf8_3fast(c);
-                } else {
-                    c = _decodeUtf8_3(c);
-                }
-                break;
-            case 3: // 4-byte UTF
-                c = _decodeUtf8_4(c);
-                // Let's add first part right away:
-                outBuf[outPtr++] = (char) (0xD800 | (c >> 10));
-                if (outPtr >= outBuf.length) {
-                    outBuf = _textBuffer.finishCurrentSegment();
-                    outPtr = 0;
-                }
-                c = 0xDC00 | (c & 0x3FF);
-                // And let the other char output down below
-                break;
-            default:
-                // Is this good enough error message?
-                _reportInvalidChar(c);
-            }
-            // Need more room?
-            if (outPtr >= outBuf.length) {
-                outBuf = _textBuffer.finishCurrentSegment();
-                outPtr = 0;
-            }
-            // Ok, let's add char to output:
-            outBuf[outPtr++] = (char) c;
-        }
-        _textBuffer.setCurrentLength(outPtr);
-    }
-
-    private final void _finishRawBinary()
-        throws IOException, JsonParseException
-    {
-        int byteLen = _readUnsignedVInt();
-        _binaryValue = new byte[byteLen];
-        if (_inputPtr >= _inputEnd) {
-            loadMoreGuaranteed();
-        }
-        int ptr = 0;
-        while (true) {
-            int toAdd = Math.min(byteLen, _inputEnd - _inputPtr);
-            System.arraycopy(_inputBuffer, _inputPtr, _binaryValue, ptr, toAdd);
-            _inputPtr += toAdd;
-            ptr += toAdd;
-            byteLen -= toAdd;
-            if (byteLen <= 0) {
-                return;
-            }
-            loadMoreGuaranteed();
-        }
-    }
-    
     /*
     /**********************************************************************
     /* Internal methods, UTF8 decoding
