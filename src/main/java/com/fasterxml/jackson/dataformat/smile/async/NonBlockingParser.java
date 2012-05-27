@@ -37,8 +37,22 @@ public class NonBlockingParser
      */
     protected final static int STATE_INITIAL = 0;
 
-    // // // States for optional in-stream headers
-    protected final static int STATE_HEADER = 1;
+    /**
+     * State in which we are expecting a value token of some
+     * kind (as opposed to a field name)
+     */
+    protected final static int STATE_VALUE = 1;
+    
+    /**
+     * State in which we are expecting a field name token,
+     * or end-object.
+     */
+//    protected final static int STATE_FIELD_NAME = 2;
+
+    /**
+     * State for recognized header marker, either in-feed or
+     */
+    protected final static int STATE_HEADER = 2;
     
     // // // States for decoding numbers:
     protected final static int STATE_NUMBER_INT = 3;
@@ -68,12 +82,14 @@ public class NonBlockingParser
      */
     protected boolean _mayContainRawBinary;
 
+    protected final boolean _cfgRequireHeader;
+
     /**
      * Helper object used for low-level recycling of Smile-generator
      * specific buffers.
      */
     final protected SmileBufferRecycler<String> _smileBufferRecycler;
-
+    
     /*
     /**********************************************************************
     /* Input source config
@@ -234,6 +250,8 @@ public class NonBlockingParser
         _currToken = JsonToken.NOT_AVAILABLE;
         _state = STATE_INITIAL;
         _tokenIncomplete = true;
+
+        _cfgRequireHeader = (smileFeatures & SmileParser.Feature.REQUIRE_HEADER.getMask()) != 0;
     }
 
     @Override
@@ -599,8 +617,8 @@ public class NonBlockingParser
                     return _nextBigDecimal(0);
                 case 0x0B: // illegal
                     break;
-                case 0x1A: { // == 0x3A == ':' -> possibly header signature for next chunk?
-                    if (_nextHeader(1) == JsonToken.NOT_AVAILABLE)
+                case 0x1A: // == 0x3A == ':' -> possibly header signature for next chunk?
+                    if (!_handleHeader(0)) {
                         return JsonToken.NOT_AVAILABLE;
                     }
                     //if (handleSignature(false, false)) {
@@ -613,7 +631,7 @@ public class NonBlockingParser
                         return nextToken();
                     }
                     return (_currToken = null);
-            	}
+                }
             }
             // and everything else is reserved, for now
             break;
@@ -844,10 +862,47 @@ public class NonBlockingParser
         return JsonToken.NOT_AVAILABLE;
     }
 
-    private final JsonToken _nextHeader(int substate) throws IOException, JsonParseException
+    private final boolean _handleHeader(int substate) throws IOException, JsonParseException
     {
-        // !!! TBI
-        return JsonToken.NOT_AVAILABLE;
+        while (_inputPtr < _inputEnd) {
+            byte b = _inputBuffer[_inputPtr++];
+            switch (substate) {
+            case 0: // after first byte
+                if (b != SmileConstants.HEADER_BYTE_2) {
+                    _reportError("Malformed content: header signature not valid, starts with 0x3a but followed by 0x"
+                            +Integer.toHexString(_inputBuffer[_inputPtr] & 0xFF)+", not 0x29");
+                }
+                break;
+            case 1:
+                if (b != SmileConstants.HEADER_BYTE_3) {
+                    _reportError("Malformed content: signature not valid, starts with 0x3a, 0x29, but followed by 0x"
+                            +Integer.toHexString(_inputBuffer[_inputPtr & 0xFF])+", not 0x0A");
+                }
+                break;
+            case 2: // ok, here be the version, config bits...
+                int versionBits = (b >> 4) & 0x0F;
+                // but failure with version number is fatal, can not ignore
+                if (versionBits != SmileConstants.HEADER_VERSION_0) {
+                    _reportError("Header version number bits (0x"+Integer.toHexString(versionBits)+") indicate unrecognized version; only 0x0 handled by parser");
+                }
+
+                // can avoid tracking names, if explicitly disabled
+                if ((b & SmileConstants.HEADER_BIT_HAS_SHARED_NAMES) == 0) {
+                    _seenNames = null;
+                    _seenNameCount = -1;
+                }
+                // conversely, shared string values must be explicitly enabled
+                if ((b & SmileConstants.HEADER_BIT_HAS_SHARED_STRING_VALUES) != 0) {
+                    _seenStringValues = NO_STRINGS;
+                    _seenStringValueCount = 0;
+                }
+                _mayContainRawBinary = ((b & SmileConstants.HEADER_BIT_HAS_RAW_BINARY) != 0);
+                return true;
+            }
+        }
+        _state = STATE_HEADER;
+        _substate = substate;
+        return false;
     }
 
     /*
@@ -1596,9 +1651,30 @@ public class NonBlockingParser
     protected final boolean _finishToken()
     	throws IOException, JsonParseException
     {
+        if (_inputPtr >= _inputEnd) {
+            return false;
+        }
+        byte b = _inputBuffer[_inputPtr++];
         switch (_state) {
-        case STATE_INITIAL:
-            return _nextHeader(_substate) != JsonToken.NOT_AVAILABLE;
+        case STATE_INITIAL: // just need to see if we see something like header:
+            if (b == SmileConstants.HEADER_BYTE_1) {
+                return _handleHeader(0);
+            }
+            // nope, not header marker.
+            // header mandatory? not good...
+            if (_cfgRequireHeader) {
+                String msg;
+                if (b == '{' || b == '[') {
+                    msg = "Input does not start with Smile format header (first byte = 0x"
+                        +Integer.toHexString(b & 0xFF)+") -- rather, it starts with '"+((char) b)
+                        +"' (plain JSON input?) -- can not parse";
+                } else {
+                    msg = "Input does not start with Smile format header (first byte = 0x"
+                    +Integer.toHexString(b & 0xFF)+") and parser has REQUIRE_HEADER enabled: can not parse";
+                }
+                throw new JsonParseException(msg, JsonLocation.NA);
+            }
+            return true;
         case STATE_NUMBER_INT:
             return _nextInt(_substate, _pendingInt) != JsonToken.NOT_AVAILABLE;
         case STATE_NUMBER_LONG:

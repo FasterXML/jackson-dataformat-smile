@@ -95,12 +95,12 @@ public final class SmileConstants
      */
 
     /**
-     * First byte of data header
+     * First byte of data header (0x3A)
      */
     public final static byte HEADER_BYTE_1 = (byte) ':';
 
     /**
-     * Second byte of data header
+     * Second byte of data header (0x29)
      */
     public final static byte HEADER_BYTE_2 = (byte) ')';
 

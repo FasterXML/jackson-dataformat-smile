@@ -21,27 +21,27 @@ public class SmileParserBootstrapper
     /**********************************************************
      */
 
-    final IOContext _context;
+    protected final IOContext _context;
 
-    final InputStream _in;
-
+    protected final InputStream _in;
+    
     /*
     /**********************************************************
     /* Input buffering
     /**********************************************************
      */
 
-    final byte[] _inputBuffer;
+    protected final byte[] _inputBuffer;
 
-    private int _inputPtr;
+    protected int _inputPtr;
 
-    private int _inputEnd;
+    protected int _inputEnd;
 
     /**
      * Flag that indicates whether buffer above is to be recycled
      * after being used or not.
      */
-    private final boolean _bufferRecyclable;
+    protected final boolean _bufferRecyclable;
 
     /*
     /**********************************************************
@@ -57,12 +57,6 @@ public class SmileParserBootstrapper
      * Note: includes possible BOMs, if those were part of the input.
      */
     protected int _inputProcessed;
-
-    /*
-    /**********************************************************
-    /* Data gathered
-    /**********************************************************
-     */
 
     /*
     /**********************************************************
@@ -134,11 +128,6 @@ public class SmileParserBootstrapper
     /**********************************************************
      */
 
-    /**
-     * Helper
-     * 
-     * @since 1.8
-     */
     public static MatchStrength hasSmileFormat(InputAccessor acc) throws IOException
     {
         // Ok: ideally we start with the header -- if so, we are golden
