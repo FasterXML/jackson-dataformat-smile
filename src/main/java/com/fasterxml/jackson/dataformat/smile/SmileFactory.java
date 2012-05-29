@@ -221,21 +221,21 @@ public class SmileFactory extends JsonFactory
     public SmileParser createJsonParser(File f)
         throws IOException, JsonParseException
     {
-        return _createJsonParser(new FileInputStream(f), _createContext(f, true));
+        return _createParser(new FileInputStream(f), _createContext(f, true));
     }
 
     @Override
     public SmileParser createJsonParser(URL url)
         throws IOException, JsonParseException
     {
-        return _createJsonParser(_optimizedStreamFromURL(url), _createContext(url, true));
+        return _createParser(_optimizedStreamFromURL(url), _createContext(url, true));
     }
 
     @Override
     public SmileParser createJsonParser(InputStream in)
         throws IOException, JsonParseException
     {
-        return _createJsonParser(in, _createContext(in, false));
+        return _createParser(in, _createContext(in, false));
     }
 
     //public JsonParser createJsonParser(Reader r)
@@ -245,14 +245,14 @@ public class SmileFactory extends JsonFactory
         throws IOException, JsonParseException
     {
         IOContext ctxt = _createContext(data, true);
-        return _createJsonParser(data, 0, data.length, ctxt);
+        return _createParser(data, 0, data.length, ctxt);
     }
     
     @Override
     public SmileParser createJsonParser(byte[] data, int offset, int len)
         throws IOException, JsonParseException
     {
-        return _createJsonParser(data, offset, len, _createContext(data, true));
+        return _createParser(data, offset, len, _createContext(data, true));
     }
 
     /*
@@ -281,7 +281,7 @@ public class SmileFactory extends JsonFactory
     {
         // false -> we won't manage the stream unless explicitly directed to
         IOContext ctxt = _createContext(out, false);
-        return _createJsonGenerator(out, ctxt);
+        return _createGenerator(out, ctxt);
     }
     
     /*
@@ -297,7 +297,7 @@ public class SmileFactory extends JsonFactory
      * parser.
      */
     @Override
-    protected SmileParser _createJsonParser(InputStream in, IOContext ctxt)
+    protected SmileParser _createParser(InputStream in, IOContext ctxt)
         throws IOException, JsonParseException
     {
         return new SmileParserBootstrapper(ctxt, in).constructParser(_parserFeatures,
@@ -310,11 +310,11 @@ public class SmileFactory extends JsonFactory
      * parser.
      */
     @Override
-    protected JsonParser _createJsonParser(Reader r, IOContext ctxt)
+    protected JsonParser _createParser(Reader r, IOContext ctxt)
         throws IOException, JsonParseException
     {
         if (_cfgDelegateToTextual) {
-            return super._createJsonParser(r, ctxt);
+            return super._createParser(r, ctxt);
         }
         throw new UnsupportedOperationException("Can not create generator for non-byte-based target");
     }
@@ -324,7 +324,7 @@ public class SmileFactory extends JsonFactory
      * parser.
      */
     @Override
-    protected SmileParser _createJsonParser(byte[] data, int offset, int len, IOContext ctxt)
+    protected SmileParser _createParser(byte[] data, int offset, int len, IOContext ctxt)
         throws IOException, JsonParseException
     {
         return new SmileParserBootstrapper(ctxt, data, offset, len).constructParser(
@@ -338,11 +338,11 @@ public class SmileFactory extends JsonFactory
      * generator.
      */
     @Override
-    protected JsonGenerator _createJsonGenerator(Writer out, IOContext ctxt)
+    protected JsonGenerator _createGenerator(Writer out, IOContext ctxt)
         throws IOException
     {
         if (_cfgDelegateToTextual) {
-            return super._createJsonGenerator(out, ctxt);
+            return super._createGenerator(out, ctxt);
         }
         throw new UnsupportedOperationException("Can not create generator for non-byte-based target");
     }
@@ -364,7 +364,7 @@ public class SmileFactory extends JsonFactory
     /**********************************************************
      */
     
-    protected SmileGenerator _createJsonGenerator(OutputStream out, IOContext ctxt)
+    protected SmileGenerator _createGenerator(OutputStream out, IOContext ctxt)
         throws IOException
     {
         int feats = _smileGeneratorFeatures;

@@ -986,7 +986,7 @@ public class NonBlockingParserImpl
         _substate = substate;
         return false;
     }
-ccc
+
     /*
     protected final void _decodeShortAsciiValue(int len)
         throws IOException, JsonParseException
