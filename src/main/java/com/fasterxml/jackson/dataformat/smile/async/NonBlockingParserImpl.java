@@ -56,11 +56,13 @@ public class NonBlockingParserImpl
     protected final static int STATE_NUMBER_DOUBLE = 14;
     protected final static int STATE_NUMBER_BIGDEC = 15;
 
-    protected final static int STATE_LONG_ASCII = 20;
-    protected final static int STATE_LONG_UNICODE = 21;
-    protected final static int STATE_LONG_SHARED = 22;
-    protected final static int STATE_RAW_BINARY = 23;
-    protected final static int STATE_QUOTED_BINARY = 24;
+    protected final static int STATE_SHORT_ASCII = 20;
+    protected final static int STATE_SHORT_UNICODE = 21;
+    protected final static int STATE_LONG_ASCII = 22;
+    protected final static int STATE_LONG_UNICODE = 23;
+    protected final static int STATE_LONG_SHARED = 24;
+    protected final static int STATE_RAW_BINARY = 25;
+    protected final static int STATE_QUOTED_BINARY = 26;
     
     /*
     /**********************************************************************
@@ -987,6 +989,22 @@ public class NonBlockingParserImpl
         return false;
     }
 
+    private final JsonToken _nextShortAscii(int substate) throws IOException, JsonParseException
+    {
+        _state = STATE_SHORT_ASCII;
+        _tokenIncomplete = true;
+        _substate = substate;
+        return (_currToken = JsonToken.NOT_AVAILABLE);
+    }
+
+    private final JsonToken _nextShortUnicode(int substate) throws IOException, JsonParseException
+    {
+        _state = STATE_SHORT_UNICODE;
+        _tokenIncomplete = true;
+        _substate = substate;
+        return (_currToken = JsonToken.NOT_AVAILABLE);
+    }
+    
     /*
     protected final void _decodeShortAsciiValue(int len)
         throws IOException, JsonParseException
@@ -1198,7 +1216,7 @@ public class NonBlockingParserImpl
         _substate = substate;
         return (_currToken = JsonToken.NOT_AVAILABLE);
     }
-ccc
+
     private final JsonToken _nextRawBinary(int substate) throws IOException, JsonParseException
     {
         // did not get it all; mark the state so we know where to return:
@@ -1580,6 +1598,9 @@ ccc
         }
         return newShared;
     }
+    
+    private int _quad1, _quad2;
+    
     
     private final String _addDecodedToSymbols(int len, String name)
     {

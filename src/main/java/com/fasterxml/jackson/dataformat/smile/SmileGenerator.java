@@ -1139,7 +1139,7 @@ public class SmileGenerator
             return;
         }
         _verifyValueWrite("write Binary value");
-        if (this.isEnabled(Feature.ENCODE_BINARY_AS_7BIT)) {
+        if (isEnabled(Feature.ENCODE_BINARY_AS_7BIT)) {
             _writeByte((byte) TOKEN_MISC_BINARY_7BIT);
             _write7BitBinaryWithLength(data, offset, len);
         } else {
@@ -1148,6 +1148,43 @@ public class SmileGenerator
             // raw is dead simple of course:
             _writeBytes(data, offset, len);
         }
+    }
+
+    @Override
+    public int writeBinary(InputStream data, int dataLength)
+        throws IOException, JsonGenerationException
+    {
+        // Smile requires knowledge of length in advance, since binary is length-prefixed
+        if (dataLength < 0) {
+            throw new UnsupportedOperationException("Must pass actual length for Smile encoded data");
+        }
+        _verifyValueWrite("write Binary value");
+        int missing;
+        if (isEnabled(Feature.ENCODE_BINARY_AS_7BIT)) {
+            _writeByte((byte) TOKEN_MISC_BINARY_7BIT);
+            byte[] encodingBuffer = _ioContext.allocBase64Buffer();
+            try {
+                missing = _write7BitBinaryWithLength(data, dataLength, encodingBuffer);
+            } finally {
+                _ioContext.releaseBase64Buffer(encodingBuffer);
+            }
+        } else {
+            _writeByte((byte) TOKEN_MISC_BINARY_RAW );
+            _writePositiveVInt(dataLength);
+            // raw is dead simple of course:
+            missing = _writeBytes(data, dataLength);
+        }
+        if (missing > 0) {
+            _reportError("Too few bytes available: missing "+missing+" bytes (out of "+dataLength+")");
+        }
+        return dataLength;
+    }
+    
+    @Override
+    public int writeBinary(Base64Variant b64variant, InputStream data, int dataLength)
+        throws IOException, JsonGenerationException
+    {
+        return writeBinary(data, dataLength);
     }
     
     /*
@@ -1788,6 +1825,24 @@ public class SmileGenerator
         System.arraycopy(data, offset, _outputBuffer, _outputTail, len);
         _outputTail += len;
     }
+
+    private final int _writeBytes(InputStream in, int bytesLeft) throws IOException
+    {
+        while (bytesLeft > 0) {
+            int room = _outputEnd - _outputTail;
+            if (room < 0) {
+                _flushBuffer();
+                room = _outputEnd - _outputTail;
+            }
+            int count = in.read(_outputBuffer, _outputTail, room);
+            if (count < 0) {
+                break;
+            }
+            _outputTail += count;
+            bytesLeft -= count;
+        }
+        return bytesLeft;
+    }
     
     private final void _writeBytesLong(byte[] data, int offset, int len) throws IOException
     {
@@ -1924,6 +1979,79 @@ public class SmileGenerator
                 _outputBuffer[_outputTail++] = (byte) (i & 0x01); // last bit
             }
         }
+    }
+
+    protected int _write7BitBinaryWithLength(InputStream in, int bytesLeft, byte[] buffer) 
+        throws IOException
+    {
+        _writePositiveVInt(bytesLeft);
+        // first, let's handle full 7-byte chunks
+        /*
+        while (bytesLeft >= 7) {
+            if ((_outputTail + 8) >= _outputEnd) {
+                _flushBuffer();
+            }
+            int i = data[offset++]; // 1st byte
+            _outputBuffer[_outputTail++] = (byte) ((i >> 1) & 0x7F);
+            i = (i << 8) | (data[offset++] & 0xFF); // 2nd
+            _outputBuffer[_outputTail++] = (byte) ((i >> 2) & 0x7F);
+            i = (i << 8) | (data[offset++] & 0xFF); // 3rd
+            _outputBuffer[_outputTail++] = (byte) ((i >> 3) & 0x7F);
+            i = (i << 8) | (data[offset++] & 0xFF); // 4th
+            _outputBuffer[_outputTail++] = (byte) ((i >> 4) & 0x7F);
+            i = (i << 8) | (data[offset++] & 0xFF); // 5th
+            _outputBuffer[_outputTail++] = (byte) ((i >> 5) & 0x7F);
+            i = (i << 8) | (data[offset++] & 0xFF); // 6th
+            _outputBuffer[_outputTail++] = (byte) ((i >> 6) & 0x7F);
+            i = (i << 8) | (data[offset++] & 0xFF); // 7th
+            _outputBuffer[_outputTail++] = (byte) ((i >> 7) & 0x7F);
+            _outputBuffer[_outputTail++] = (byte) (i & 0x7F);
+            len -= 7;
+        }
+        */
+        // and then partial piece, if any
+        if (bytesLeft > 0) {
+            // up to 6 bytes to output, resulting in at most 7 bytes (which can encode 49 bits)
+            if ((_outputTail + 7) >= _outputEnd) {
+                _flushBuffer();
+            }
+            /*
+            int i = data[offset++];
+            _outputBuffer[_outputTail++] = (byte) ((i >> 1) & 0x7F);
+            if (len > 1) {
+                i = ((i & 0x01) << 8) | (data[offset++] & 0xFF); // 2nd
+                _outputBuffer[_outputTail++] = (byte) ((i >> 2) & 0x7F);
+                if (len > 2) {
+                    i = ((i & 0x03) << 8) | (data[offset++] & 0xFF); // 3rd
+                    _outputBuffer[_outputTail++] = (byte) ((i >> 3) & 0x7F);
+                    if (len > 3) {
+                        i = ((i & 0x07) << 8) | (data[offset++] & 0xFF); // 4th
+                        _outputBuffer[_outputTail++] = (byte) ((i >> 4) & 0x7F);
+                        if (len > 4) {
+                            i = ((i & 0x0F) << 8) | (data[offset++] & 0xFF); // 5th
+                            _outputBuffer[_outputTail++] = (byte) ((i >> 5) & 0x7F);
+                            if (len > 5) {
+                                i = ((i & 0x1F) << 8) | (data[offset++] & 0xFF); // 6th
+                                _outputBuffer[_outputTail++] = (byte) ((i >> 6) & 0x7F);
+                                _outputBuffer[_outputTail++] = (byte) (i & 0x3F); // last 6 bits
+                            } else {
+                                _outputBuffer[_outputTail++] = (byte) (i & 0x1F); // last 5 bits                                
+                            }
+                        } else {
+                            _outputBuffer[_outputTail++] = (byte) (i & 0x0F); // last 4 bits
+                        }
+                    } else {
+                        _outputBuffer[_outputTail++] = (byte) (i & 0x07); // last 3 bits                        
+                    }
+                } else {
+                    _outputBuffer[_outputTail++] = (byte) (i & 0x03); // last 2 bits                    
+                }
+            } else {
+                _outputBuffer[_outputTail++] = (byte) (i & 0x01); // last bit
+            }
+            */
+        }
+        return bytesLeft;
     }
     
     /*
