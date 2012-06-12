@@ -1995,8 +1995,6 @@ public class SmileGenerator
                 inputEnd = _readMore(in, buffer, inputPtr, inputEnd, bytesLeft);
                 inputPtr = 0;
                 if (inputEnd < 7) { // required to try to read to have at least 7 bytes
-                    System.err.print("[onlu "+inputEnd+" for "+bytesLeft+"]");
-
                     bytesLeft -= inputEnd; // just to give accurate error messages wrt how much was gotten
                     break;
                 }
