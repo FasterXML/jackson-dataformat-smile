@@ -1985,73 +1985,116 @@ public class SmileGenerator
         throws IOException
     {
         _writePositiveVInt(bytesLeft);
+        int inputPtr = 0;
+        int inputEnd = 0;
+        int lastFullOffset = -7;
+
         // first, let's handle full 7-byte chunks
-        /*
         while (bytesLeft >= 7) {
+            if (inputPtr > lastFullOffset) {
+                inputEnd = _readMore(in, buffer, inputPtr, inputEnd, bytesLeft);
+                inputPtr = 0;
+                if (inputEnd < 7) { // required to try to read to have at least 7 bytes
+                    System.err.print("[onlu "+inputEnd+" for "+bytesLeft+"]");
+
+                    bytesLeft -= inputEnd; // just to give accurate error messages wrt how much was gotten
+                    break;
+                }
+                lastFullOffset = inputEnd-7;
+            }
             if ((_outputTail + 8) >= _outputEnd) {
                 _flushBuffer();
             }
-            int i = data[offset++]; // 1st byte
+            int i = buffer[inputPtr++]; // 1st byte
             _outputBuffer[_outputTail++] = (byte) ((i >> 1) & 0x7F);
-            i = (i << 8) | (data[offset++] & 0xFF); // 2nd
+            i = (i << 8) | (buffer[inputPtr++] & 0xFF); // 2nd
             _outputBuffer[_outputTail++] = (byte) ((i >> 2) & 0x7F);
-            i = (i << 8) | (data[offset++] & 0xFF); // 3rd
+            i = (i << 8) | (buffer[inputPtr++] & 0xFF); // 3rd
             _outputBuffer[_outputTail++] = (byte) ((i >> 3) & 0x7F);
-            i = (i << 8) | (data[offset++] & 0xFF); // 4th
+            i = (i << 8) | (buffer[inputPtr++] & 0xFF); // 4th
             _outputBuffer[_outputTail++] = (byte) ((i >> 4) & 0x7F);
-            i = (i << 8) | (data[offset++] & 0xFF); // 5th
+            i = (i << 8) | (buffer[inputPtr++] & 0xFF); // 5th
             _outputBuffer[_outputTail++] = (byte) ((i >> 5) & 0x7F);
-            i = (i << 8) | (data[offset++] & 0xFF); // 6th
+            i = (i << 8) | (buffer[inputPtr++] & 0xFF); // 6th
             _outputBuffer[_outputTail++] = (byte) ((i >> 6) & 0x7F);
-            i = (i << 8) | (data[offset++] & 0xFF); // 7th
+            i = (i << 8) | (buffer[inputPtr++] & 0xFF); // 7th
             _outputBuffer[_outputTail++] = (byte) ((i >> 7) & 0x7F);
             _outputBuffer[_outputTail++] = (byte) (i & 0x7F);
-            len -= 7;
+            bytesLeft -= 7;
         }
-        */
+
+    System.err.print("main loop, left="+bytesLeft);
+
         // and then partial piece, if any
         if (bytesLeft > 0) {
             // up to 6 bytes to output, resulting in at most 7 bytes (which can encode 49 bits)
             if ((_outputTail + 7) >= _outputEnd) {
                 _flushBuffer();
             }
-            /*
-            int i = data[offset++];
-            _outputBuffer[_outputTail++] = (byte) ((i >> 1) & 0x7F);
-            if (len > 1) {
-                i = ((i & 0x01) << 8) | (data[offset++] & 0xFF); // 2nd
-                _outputBuffer[_outputTail++] = (byte) ((i >> 2) & 0x7F);
-                if (len > 2) {
-                    i = ((i & 0x03) << 8) | (data[offset++] & 0xFF); // 3rd
-                    _outputBuffer[_outputTail++] = (byte) ((i >> 3) & 0x7F);
-                    if (len > 3) {
-                        i = ((i & 0x07) << 8) | (data[offset++] & 0xFF); // 4th
-                        _outputBuffer[_outputTail++] = (byte) ((i >> 4) & 0x7F);
-                        if (len > 4) {
-                            i = ((i & 0x0F) << 8) | (data[offset++] & 0xFF); // 5th
-                            _outputBuffer[_outputTail++] = (byte) ((i >> 5) & 0x7F);
-                            if (len > 5) {
-                                i = ((i & 0x1F) << 8) | (data[offset++] & 0xFF); // 6th
-                                _outputBuffer[_outputTail++] = (byte) ((i >> 6) & 0x7F);
-                                _outputBuffer[_outputTail++] = (byte) (i & 0x3F); // last 6 bits
+            inputEnd = _readMore(in, buffer, inputPtr, inputEnd, bytesLeft);
+            inputPtr = 0;
+            if (inputEnd > 0) { // yes, but do we have room for output?
+                bytesLeft -= inputEnd;
+                int i = buffer[inputPtr++];
+                _outputBuffer[_outputTail++] = (byte) ((i >> 1) & 0x7F);
+                if (inputEnd > 1) {
+                    i = ((i & 0x01) << 8) | (buffer[inputPtr++] & 0xFF); // 2nd
+                    _outputBuffer[_outputTail++] = (byte) ((i >> 2) & 0x7F);
+                    if (inputEnd > 2) {
+                        i = ((i & 0x03) << 8) | (buffer[inputPtr++] & 0xFF); // 3rd
+                        _outputBuffer[_outputTail++] = (byte) ((i >> 3) & 0x7F);
+                        if (inputEnd > 3) {
+                            i = ((i & 0x07) << 8) | (buffer[inputPtr++] & 0xFF); // 4th
+                            _outputBuffer[_outputTail++] = (byte) ((i >> 4) & 0x7F);
+                            if (inputEnd > 4) {
+                                i = ((i & 0x0F) << 8) | (buffer[inputPtr++] & 0xFF); // 5th
+                                _outputBuffer[_outputTail++] = (byte) ((i >> 5) & 0x7F);
+                                if (inputEnd > 5) {
+                                    i = ((i & 0x1F) << 8) | (buffer[inputPtr++] & 0xFF); // 6th
+                                    _outputBuffer[_outputTail++] = (byte) ((i >> 6) & 0x7F);
+                                    _outputBuffer[_outputTail++] = (byte) (i & 0x3F); // last 6 bits
+                                } else {
+                                    _outputBuffer[_outputTail++] = (byte) (i & 0x1F); // last 5 bits                                
+                                }
                             } else {
-                                _outputBuffer[_outputTail++] = (byte) (i & 0x1F); // last 5 bits                                
+                                _outputBuffer[_outputTail++] = (byte) (i & 0x0F); // last 4 bits
                             }
                         } else {
-                            _outputBuffer[_outputTail++] = (byte) (i & 0x0F); // last 4 bits
+                            _outputBuffer[_outputTail++] = (byte) (i & 0x07); // last 3 bits                        
                         }
                     } else {
-                        _outputBuffer[_outputTail++] = (byte) (i & 0x07); // last 3 bits                        
+                        _outputBuffer[_outputTail++] = (byte) (i & 0x03); // last 2 bits                    
                     }
                 } else {
-                    _outputBuffer[_outputTail++] = (byte) (i & 0x03); // last 2 bits                    
+                    _outputBuffer[_outputTail++] = (byte) (i & 0x01); // last bit
                 }
-            } else {
-                _outputBuffer[_outputTail++] = (byte) (i & 0x01); // last bit
             }
-            */
         }
         return bytesLeft;
+    }
+
+    private int _readMore(InputStream in,
+            byte[] readBuffer, int inputPtr, int inputEnd,
+            int maxRead) throws IOException
+    {
+        // anything to shift to front?
+        int i = 0;
+        while (inputPtr < inputEnd) {
+            readBuffer[i++]  = readBuffer[inputPtr++];
+        }
+        inputPtr = 0;
+        inputEnd = i;
+        
+        maxRead = Math.min(maxRead, readBuffer.length);
+        
+        do {
+            int count = in.read(readBuffer, inputEnd, maxRead - inputEnd);
+            if (count < 0) {
+                return inputEnd;
+            }
+            inputEnd += count;
+        } while (inputEnd < 7);
+        return inputEnd;
     }
     
     /*

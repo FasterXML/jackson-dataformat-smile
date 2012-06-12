@@ -1,12 +1,17 @@
-Version: 2.0.2
+Version: 2.1.0
 
 Release date:
-  14-May-2012
+  xx-Jul-2012
 
 Description:
-  Another patch release for 2.0.0.
+  A minor 2.x release
 
 Fixes:
+
+New features:
+
+* [Issue-3]: Implement `SmileParser.writeBinary()` variant that takes
+  InputStream, to allow incremental writes of large binary data
 
 ------------------------------------------------------------------------
 === History: ===
