@@ -4,7 +4,7 @@ import java.io.IOException;
 
 import com.fasterxml.jackson.core.*;
 
-public class TestSmileParserLocation
+public class TestParserLocation
     extends SmileTestBase
 {
     /**

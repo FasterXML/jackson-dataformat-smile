@@ -12,7 +12,7 @@ import com.fasterxml.jackson.dataformat.smile.SmileParser;
  * Unit tests for verifying that multiple document output and document
  * boundaries and/or header mark handling works as expected
  */
-public class TestSmileDocBoundary
+public class TestDocBoundary
     extends SmileTestBase
 {
     public void testNoHeadersNoEndMarker() throws Exception

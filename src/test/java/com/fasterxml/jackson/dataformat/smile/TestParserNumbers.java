@@ -9,7 +9,7 @@ import com.fasterxml.jackson.core.*;
 import com.fasterxml.jackson.dataformat.smile.SmileGenerator;
 import com.fasterxml.jackson.dataformat.smile.SmileParser;
 
-public class TestSmileParserNumbers
+public class TestParserNumbers
     extends SmileTestBase
 {
     public void testIntsMedium() throws IOException

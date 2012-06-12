@@ -10,7 +10,7 @@ import com.fasterxml.jackson.dataformat.smile.SmileFactory;
 import com.fasterxml.jackson.dataformat.smile.SmileGenerator;
 import com.fasterxml.jackson.dataformat.smile.SmileParser;
 
-public class TestSmileParserBinary
+public class TestParserBinary
     extends SmileTestBase
 {
     final static int[] SIZES = new int[] {

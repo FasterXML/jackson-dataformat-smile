@@ -7,7 +7,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-public class TestSmileAsTree extends SmileTestBase
+public class TestTreeHandling extends SmileTestBase
 {
     public void testSimple() throws Exception
     {

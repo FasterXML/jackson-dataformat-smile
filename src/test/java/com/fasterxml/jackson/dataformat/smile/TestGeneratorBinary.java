@@ -6,7 +6,7 @@ import org.junit.Assert;
 
 import com.fasterxml.jackson.core.*;
 
-public class TestSmileGeneratorBinary extends SmileTestBase
+public class TestGeneratorBinary extends SmileTestBase
 {
     static class ThrottledInputStream extends FilterInputStream
     {

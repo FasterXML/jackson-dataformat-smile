@@ -9,7 +9,7 @@ import com.fasterxml.jackson.dataformat.smile.SmileFactory;
 import com.fasterxml.jackson.dataformat.smile.SmileGenerator;
 import com.fasterxml.jackson.dataformat.smile.SmileParser;
 
-public class TestSmileParser
+public class TestParser
     extends SmileTestBase
 {
     // Unit tests for verifying that if header/signature is required,

@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.*;
 
 import com.fasterxml.jackson.dataformat.smile.SmileFactory;
 
-public class TestSmileFeatures
+public class TestFeatures
     extends SmileTestBase
 {
     /*

@@ -10,7 +10,7 @@ import com.fasterxml.jackson.dataformat.smile.SmileFactory;
 /* Test based on kimchy's issue (see https://gist.github.com/853232);
  * exhibits an issue with buffer recycling.
  */
-public class TestSmileGeneratorBufferRecycle extends SmileTestBase
+public class TestGeneratorBufferRecycle extends SmileTestBase
 {
     public void testMaps() throws Exception
     {

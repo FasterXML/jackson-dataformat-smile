@@ -12,7 +12,7 @@ import com.fasterxml.jackson.dataformat.smile.SmileUtil;
 
 import static com.fasterxml.jackson.dataformat.smile.SmileConstants.*;
 
-public class TestSmileGenerator
+public class TestGenerator
     extends SmileTestBase
 {
     /**

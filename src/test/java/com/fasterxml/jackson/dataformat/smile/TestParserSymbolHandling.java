@@ -15,7 +15,7 @@ import com.fasterxml.jackson.dataformat.smile.SmileParser;
  * Unit tests for verifying that symbol handling works as planned, including
  * efficient reuse of names encountered during parsing.
  */
-public class TestSmileParserSymbolHandling
+public class TestParserSymbolHandling
 	extends SmileTestBase
 {
     /*

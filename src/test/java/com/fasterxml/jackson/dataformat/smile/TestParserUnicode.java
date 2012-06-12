@@ -4,7 +4,7 @@ import java.io.IOException;
 
 import com.fasterxml.jackson.core.JsonToken;
 
-public class TestSmileParserUnicode extends SmileTestBase
+public class TestParserUnicode extends SmileTestBase
 {
     // [Issue-2]: probs with Surrogate handling
     public void testLongUnicodeWithSurrogates() throws IOException

@@ -7,7 +7,7 @@ import com.fasterxml.jackson.core.*;
 import com.fasterxml.jackson.dataformat.smile.SmileFactory;
 import com.fasterxml.jackson.dataformat.smile.SmileGenerator;
 
-public class TestSmileGeneratorSymbols extends SmileTestBase
+public class TestGeneratorSymbols extends SmileTestBase
 {
     /**
      * Simple test to verify that second reference will not output new String, but

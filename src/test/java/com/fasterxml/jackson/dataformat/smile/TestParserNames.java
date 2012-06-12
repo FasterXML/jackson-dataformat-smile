@@ -5,7 +5,7 @@ import java.util.Random;
 
 import com.fasterxml.jackson.core.*;
 
-public class TestSmileParserNames extends SmileTestBase
+public class TestParserNames extends SmileTestBase
 {
     public void testLongNames() throws IOException
     {

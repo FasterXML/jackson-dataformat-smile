@@ -5,7 +5,7 @@ import java.io.ByteArrayOutputStream;
 import com.fasterxml.jackson.dataformat.smile.SmileGenerator;
 import com.fasterxml.jackson.dataformat.smile.SmileUtil;
 
-public class TestSmileGeneratorNumbers
+public class TestGeneratorNumbers
     extends SmileTestBase
 {
     public void testSmallInts() throws Exception
