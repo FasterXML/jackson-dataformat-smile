@@ -1206,6 +1206,34 @@ public class SmileParser
         }
         return null;
     }
+
+    @Override
+    public int readBinaryValue(Base64Variant b64variant, OutputStream out)
+        throws IOException, JsonParseException
+    {
+        if (_currToken != JsonToken.VALUE_EMBEDDED_OBJECT ) {
+            // Todo, maybe: support base64 for text?
+            _reportError("Current token ("+_currToken+") not VALUE_EMBEDDED_OBJECT, can not access as binary");
+        }
+        // Ok, first, unlikely (but legal?) case where someone already requested binary data:
+        if (!_tokenIncomplete) {
+            if (_binaryValue == null) { // most likely already read...
+                return 0;
+            }
+            final int len = _binaryValue.length;
+            out.write(_binaryValue, 0, len);
+            return len;
+        }
+
+        // otherwise, handle, mark as complete
+        int totalCount = 0;
+        
+        // !!! TODO
+        
+        // also: mark as completed
+        _tokenIncomplete = false;
+        return totalCount;
+    }
     
     /*
     /**********************************************************

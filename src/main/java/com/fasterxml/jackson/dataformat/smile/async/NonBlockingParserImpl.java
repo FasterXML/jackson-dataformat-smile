@@ -1460,7 +1460,14 @@ public class NonBlockingParserImpl
         }
         return null;
     }
-    
+
+    // could possibly implement this... or maybe not.
+    @Override
+    public int readBinaryValue(Base64Variant b64variant, OutputStream out)
+            throws IOException, JsonParseException {
+        throw new UnsupportedOperationException();
+    }
+
     /*
     /**********************************************************************
     /* Internal methods, field name parsing
