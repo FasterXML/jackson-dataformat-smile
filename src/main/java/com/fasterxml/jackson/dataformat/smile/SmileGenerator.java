@@ -140,16 +140,15 @@ public class SmileGenerator
      */
     private final static int MIN_BUFFER_LENGTH = (3 * 256) + 2;
 
-    protected final static byte TOKEN_BYTE_LONG_STRING_ASCII = (byte) TOKEN_MISC_LONG_TEXT_ASCII;
-    protected final static byte TOKEN_BYTE_LONG_STRING_UNICODE = (byte) TOKEN_MISC_LONG_TEXT_UNICODE;
+    protected final static byte TOKEN_BYTE_LONG_STRING_ASCII = TOKEN_MISC_LONG_TEXT_ASCII;
 
-    protected final static byte TOKEN_BYTE_INT_32 =  (byte) (TOKEN_MISC_INTEGER | TOKEN_MISC_INTEGER_32);
-    protected final static byte TOKEN_BYTE_INT_64 =  (byte) (TOKEN_MISC_INTEGER | TOKEN_MISC_INTEGER_64);
-    protected final static byte TOKEN_BYTE_BIG_INTEGER =  (byte) (TOKEN_MISC_INTEGER | TOKEN_MISC_INTEGER_BIG);
+    protected final static byte TOKEN_BYTE_INT_32 =  (byte) (SmileConstants.TOKEN_PREFIX_INTEGER + TOKEN_MISC_INTEGER_32);
+    protected final static byte TOKEN_BYTE_INT_64 =  (byte) (SmileConstants.TOKEN_PREFIX_INTEGER + TOKEN_MISC_INTEGER_64);
+    protected final static byte TOKEN_BYTE_BIG_INTEGER =  (byte) (SmileConstants.TOKEN_PREFIX_INTEGER + TOKEN_MISC_INTEGER_BIG);
 
-    protected final static byte TOKEN_BYTE_FLOAT_32 =  (byte) (TOKEN_MISC_FP | TOKEN_MISC_FLOAT_32);
-    protected final static byte TOKEN_BYTE_FLOAT_64 =  (byte) (TOKEN_MISC_FP | TOKEN_MISC_FLOAT_64);
-    protected final static byte TOKEN_BYTE_BIG_DECIMAL =  (byte) (TOKEN_MISC_FP | TOKEN_MISC_FLOAT_BIG);
+    protected final static byte TOKEN_BYTE_FLOAT_32 =  (byte) (SmileConstants.TOKEN_PREFIX_FP | TOKEN_MISC_FLOAT_32);
+    protected final static byte TOKEN_BYTE_FLOAT_64 =  (byte) (SmileConstants.TOKEN_PREFIX_FP | TOKEN_MISC_FLOAT_64);
+    protected final static byte TOKEN_BYTE_BIG_DECIMAL =  (byte) (SmileConstants.TOKEN_PREFIX_FP | TOKEN_MISC_FLOAT_BIG);
     
     protected final static int SURR1_FIRST = 0xD800;
     protected final static int SURR1_LAST = 0xDBFF;
@@ -854,7 +853,8 @@ public class SmileGenerator
                 _outputBuffer[origOffset] = (byte) ((TOKEN_PREFIX_TINY_UNICODE - 2) +  byteLen);
             }
         } else { // nope, longer String 
-            _outputBuffer[origOffset] = (byteLen == len) ? TOKEN_BYTE_LONG_STRING_ASCII : TOKEN_BYTE_LONG_STRING_UNICODE;
+            _outputBuffer[origOffset] = (byteLen == len) ? TOKEN_BYTE_LONG_STRING_ASCII
+                    : SmileConstants.TOKEN_MISC_LONG_TEXT_UNICODE;
             // and we will need String end marker byte
             _outputBuffer[_outputTail++] = BYTE_MARKER_END_OF_STRING;
         }
@@ -871,7 +871,7 @@ public class SmileGenerator
         if (ix < 31) { // add 1, as byte 0 is omitted
             _writeByte((byte) (TOKEN_PREFIX_SHARED_STRING_SHORT + 1 + ix));
         } else {
-            _writeBytes(((byte) (TOKEN_MISC_SHARED_STRING_LONG + (ix >> 8))), (byte) ix);
+            _writeBytes(((byte) (TOKEN_PREFIX_SHARED_STRING_LONG + (ix >> 8))), (byte) ix);
         }
     }    
     
@@ -884,7 +884,7 @@ public class SmileGenerator
     {
         // First: can we at least make a copy to char[]?
         if (len > _charBufferLength) { // nope; need to skip copy step (alas; this is slower)
-            _writeByte(TOKEN_BYTE_LONG_STRING_UNICODE);
+            _writeByte(SmileConstants.TOKEN_MISC_LONG_TEXT_UNICODE);
             _slowUTF8Encode(text);
             _writeByte(BYTE_MARKER_END_OF_STRING);
             return;
@@ -895,7 +895,7 @@ public class SmileGenerator
         // Next: does it always fit within output buffer?
         if (maxLen > _outputBuffer.length) { // nope
             // can't rewrite type buffer, so can't speculate it might be all-ASCII
-            _writeByte(TOKEN_BYTE_LONG_STRING_UNICODE);
+            _writeByte(SmileConstants.TOKEN_MISC_LONG_TEXT_UNICODE);
             _mediumUTF8Encode(_charBuffer, 0, len);
             _writeByte(BYTE_MARKER_END_OF_STRING);
             return;
@@ -910,7 +910,7 @@ public class SmileGenerator
         int byteLen = _shortUTF8Encode(_charBuffer, 0, len);
         // If not ASCII, fix type:
         if (byteLen > len) {
-            _outputBuffer[origOffset] = TOKEN_BYTE_LONG_STRING_UNICODE;
+            _outputBuffer[origOffset] = SmileConstants.TOKEN_MISC_LONG_TEXT_UNICODE;
         }
         _outputBuffer[_outputTail++] = BYTE_MARKER_END_OF_STRING;                
     }
@@ -944,7 +944,7 @@ public class SmileGenerator
                     typeToken = (byte) ((TOKEN_PREFIX_TINY_UNICODE - 2) + byteLen);
                 }
             } else { // nope, longer non-ASCII Strings
-                typeToken = TOKEN_BYTE_LONG_STRING_UNICODE;
+                typeToken = SmileConstants.TOKEN_MISC_LONG_TEXT_UNICODE;
                 // and we will need String end marker byte
                 _outputBuffer[_outputTail++] = BYTE_MARKER_END_OF_STRING;
             }
@@ -958,7 +958,7 @@ public class SmileGenerator
                     _flushBuffer();
                 }
                 int origOffset = _outputTail;
-                _writeByte(TOKEN_BYTE_LONG_STRING_UNICODE);
+                _writeByte(SmileConstants.TOKEN_MISC_LONG_TEXT_UNICODE);
                 int byteLen = _shortUTF8Encode(text, offset, offset+len);
                 // if it's ASCII, let's revise our type determination (to help decoder optimize)
                 if (byteLen == len) {
@@ -966,7 +966,7 @@ public class SmileGenerator
                 }
                 _outputBuffer[_outputTail++] = BYTE_MARKER_END_OF_STRING;
             } else {
-                _writeByte(TOKEN_BYTE_LONG_STRING_UNICODE);
+                _writeByte(SmileConstants.TOKEN_MISC_LONG_TEXT_UNICODE);
                 _mediumUTF8Encode(text, offset, offset+len);
                 _writeByte(BYTE_MARKER_END_OF_STRING);
             }
@@ -1016,7 +1016,8 @@ public class SmileGenerator
             }
         } else { // "long" String, never shared
             // but might still fit within buffer?
-            byte typeToken = (byteLen == len) ? TOKEN_BYTE_LONG_STRING_ASCII : TOKEN_BYTE_LONG_STRING_UNICODE;
+            byte typeToken = (byteLen == len) ? TOKEN_BYTE_LONG_STRING_ASCII
+                    : SmileConstants.TOKEN_MISC_LONG_TEXT_UNICODE;
             _writeByte(typeToken);
             _writeBytes(raw, 0, raw.length);
             _writeByte(BYTE_MARKER_END_OF_STRING);
@@ -1064,12 +1065,12 @@ public class SmileGenerator
                 if ((_outputTail + maxLen) >= _outputEnd) {
                     _flushBuffer();
                 }
-                _outputBuffer[_outputTail++] = TOKEN_BYTE_LONG_STRING_UNICODE;
+                _outputBuffer[_outputTail++] = SmileConstants.TOKEN_MISC_LONG_TEXT_UNICODE;
                 System.arraycopy(text, offset, _outputBuffer, _outputTail, len);
                 _outputTail += len;
                 _outputBuffer[_outputTail++] = BYTE_MARKER_END_OF_STRING;
             } else {
-                _writeByte(TOKEN_BYTE_LONG_STRING_UNICODE);
+                _writeByte(SmileConstants.TOKEN_MISC_LONG_TEXT_UNICODE);
                 _writeBytes(text, offset, len);
                 _writeByte(BYTE_MARKER_END_OF_STRING);
             }
@@ -1140,10 +1141,10 @@ public class SmileGenerator
         }
         _verifyValueWrite("write Binary value");
         if (isEnabled(Feature.ENCODE_BINARY_AS_7BIT)) {
-            _writeByte((byte) TOKEN_MISC_BINARY_7BIT);
+            _writeByte(TOKEN_MISC_BINARY_7BIT);
             _write7BitBinaryWithLength(data, offset, len);
         } else {
-            _writeByte((byte) TOKEN_MISC_BINARY_RAW );
+            _writeByte(TOKEN_MISC_BINARY_RAW);
             _writePositiveVInt(len);
             // raw is dead simple of course:
             _writeBytes(data, offset, len);
@@ -1161,7 +1162,7 @@ public class SmileGenerator
         _verifyValueWrite("write Binary value");
         int missing;
         if (isEnabled(Feature.ENCODE_BINARY_AS_7BIT)) {
-            _writeByte((byte) TOKEN_MISC_BINARY_7BIT);
+            _writeByte(TOKEN_MISC_BINARY_7BIT);
             byte[] encodingBuffer = _ioContext.allocBase64Buffer();
             try {
                 missing = _write7BitBinaryWithLength(data, dataLength, encodingBuffer);
@@ -1169,7 +1170,7 @@ public class SmileGenerator
                 _ioContext.releaseBase64Buffer(encodingBuffer);
             }
         } else {
-            _writeByte((byte) TOKEN_MISC_BINARY_RAW );
+            _writeByte(TOKEN_MISC_BINARY_RAW );
             _writePositiveVInt(dataLength);
             // raw is dead simple of course:
             missing = _writeBytes(data, dataLength);
@@ -2020,8 +2021,6 @@ public class SmileGenerator
             _outputBuffer[_outputTail++] = (byte) (i & 0x7F);
             bytesLeft -= 7;
         }
-
-    System.err.print("main loop, left="+bytesLeft);
 
         // and then partial piece, if any
         if (bytesLeft > 0) {

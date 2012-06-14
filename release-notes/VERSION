@@ -4,14 +4,18 @@ Release date:
   xx-Jul-2012
 
 Description:
-  A minor 2.x release
+  A minor 2.x release. The biggest additional new features are in streaming
+  processing, to support large binary data chunks without having to manually
+  create separate chunks.
 
 Fixes:
 
 New features:
 
-* [Issue-3]: Implement `SmileParser.writeBinary()` variant that takes
+* [Issue-3]: Implement `SmileGenerator.writeBinary()` variant that takes
   InputStream, to allow incremental writes of large binary data
+* [Issue-4]: Implement `SmileParser.readBinary(...)` method to allow
+  incremental decoding of large binary payloads
 
 ------------------------------------------------------------------------
 === History: ===

@@ -188,19 +188,15 @@ public class SmileParserBootstrapper
 
     private static boolean likelySmileValue(byte b)
     {
-        int ch = (int) b & 0xFF;
-        if (ch >= 0xE0) { // good range for known values
-            switch (ch) {
-            case TOKEN_MISC_LONG_TEXT_ASCII: // 0xE0
-            case TOKEN_MISC_LONG_TEXT_UNICODE: // 0xE4
-            case TOKEN_MISC_BINARY_7BIT: // 0xE8
-            case TOKEN_LITERAL_START_ARRAY: // 0xF8
-            case TOKEN_LITERAL_START_OBJECT: // 0xFA
-                return true;
-            }
-            // Others will not work (end object/array; reserved; shared strings)
-            return false;
+        if (   (b == TOKEN_MISC_LONG_TEXT_ASCII) // 0xE0
+            || (b == TOKEN_MISC_LONG_TEXT_UNICODE) // 0xE4
+            || (b == TOKEN_MISC_BINARY_7BIT) // 0xE8
+            || (b == TOKEN_LITERAL_START_ARRAY) // 0xF8
+            || (b == TOKEN_LITERAL_START_OBJECT) // 0xFA
+            ) {
+            return true;
         }
+        int ch = b & 0xFF;
         // ASCII ctrl char range is pretty good match too
         if (ch >= 0x80 && ch <= 0x9F) {
             return true;

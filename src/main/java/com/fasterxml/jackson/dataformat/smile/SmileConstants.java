@@ -162,6 +162,10 @@ public final class SmileConstants
     /* Type prefixes: 3 MSB of token byte
     /**********************************************************
      */
+
+    public final static int TOKEN_PREFIX_INTEGER = 0x24;
+
+    public final static int TOKEN_PREFIX_FP = 0x28;
     
     // Shared strings are back references for last 63 short (< 64 byte) string values
     // NOTE: 0x00 is reserved, not used with current version (may be used in future)
@@ -169,6 +173,8 @@ public final class SmileConstants
     // literals are put between 0x20 and 0x3F to reserve markers (smiley), along with ints/doubles
     //public final static int TOKEN_PREFIX_MISC_NUMBERS = 0x20;
 
+    public final static int TOKEN_PREFIX_SHARED_STRING_LONG = 0xEC;
+    
     public final static int TOKEN_PREFIX_TINY_ASCII = 0x40;
     public final static int TOKEN_PREFIX_SMALL_ASCII = 0x60;
     public final static int TOKEN_PREFIX_TINY_UNICODE = 0x80;
@@ -207,23 +213,23 @@ public final class SmileConstants
      */
 
     /**
-     * Type (for misc, other) used
-     * for regular integral types (byte/short/int/long)
+     * @deprecated Since 2.1, use {@link #TOKEN_PREFIX_INTEGER} instead
      */
-    public final static int TOKEN_MISC_INTEGER = 0x24;
+    @Deprecated
+    public final static int TOKEN_MISC_INTEGER = 0x24;  
 
     /**
-     * Type (for misc, other) used 
-     * for regular floating-point types (float, double)
+     * @deprecated Since 2.1, use {@link #TOKEN_PREFIX_FP} instead
      */
+    @Deprecated
     public final static int TOKEN_MISC_FP = 0x28;
-    
+
     /**
      * Type (for misc, other) used for
      * variable length UTF-8 encoded text, when it is known to only contain ASCII chars.
      * Note: 2 LSB are reserved for future use; must be zeroes for now
      */
-    public final static int TOKEN_MISC_LONG_TEXT_ASCII = 0xE0;
+    public final static byte TOKEN_MISC_LONG_TEXT_ASCII = (byte) 0xE0;
 
     /**
      * Type (for misc, other) used
@@ -231,7 +237,7 @@ public final class SmileConstants
      * (which means it MAY have multi-byte characters)
      * Note: 2 LSB are reserved for future use; must be zeroes for now
      */
-    public final static int TOKEN_MISC_LONG_TEXT_UNICODE = 0xE4;
+    public final static byte TOKEN_MISC_LONG_TEXT_UNICODE = (byte) 0xE4;
     
     /**
      * Type (for misc, other) used
@@ -240,22 +246,20 @@ public final class SmileConstants
      * in encoded data (like 0xFF)
      * Note: 2 LSB are reserved for future use; must be zeroes for now
      */
-    public final static int TOKEN_MISC_BINARY_7BIT = 0xE8;
+    public final static byte TOKEN_MISC_BINARY_7BIT = (byte) 0xE8;
 
     /**
-     * Type (for misc, other) used for shared String values where index
-     * does not fit in "short" reference range (which is 0 - 30). If so,
-     * 2 LSB from here and full following byte are used to get 10-bit
-     * index. Values 
+     * @deprecated (since 2.1) Use {@link #TOKEN_PREFIX_SHARED_STRING_LONG} instead
      */
-    public final static int TOKEN_MISC_SHARED_STRING_LONG = 0xEC;
+    @Deprecated
+    public final static byte A_TOKEN_MISC_SHARED_STRING_LONG = (byte) 0xEC;
     
     /**
      * Raw binary data marker is specifically chosen as separate from
      * other types, since it can have significant impact on framing
      * (or rather fast scanning based on structure and framing markers).
      */
-    public final static int TOKEN_MISC_BINARY_RAW = 0xFD;
+    public final static byte TOKEN_MISC_BINARY_RAW = (byte) 0xFD;
 
     /*
     /**********************************************************

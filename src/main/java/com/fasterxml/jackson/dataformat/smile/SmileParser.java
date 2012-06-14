@@ -1226,13 +1226,91 @@ public class SmileParser
         }
 
         // otherwise, handle, mark as complete
-        int totalCount = 0;
-        
-        // !!! TODO
-        
-        // also: mark as completed
+        // first, raw inlined binary data (simple)
+        if (_typeByte == SmileConstants.TOKEN_MISC_BINARY_RAW) {
+            final int totalCount = _readUnsignedVInt();
+            int left = totalCount;
+            while (left > 0) {
+                int avail = _inputEnd - _inputPtr;
+                if (_inputPtr >= _inputEnd) {
+                    loadMoreGuaranteed();
+                    avail = _inputEnd - _inputPtr;
+                }
+                int count = Math.min(avail, left);
+                out.write(_inputBuffer, _inputPtr, count);
+                _inputPtr += count;
+                left -= count;
+            }
+            _tokenIncomplete = false;
+            return totalCount;
+        }
+        if (_typeByte != SmileConstants.TOKEN_MISC_BINARY_7BIT) {
+            _throwInternal();
+        }
+        // or, alternative, 7-bit encoded stuff:
+        final int totalCount = _readUnsignedVInt();
+        byte[] encodingBuffer = _ioContext.allocBase64Buffer();
+        try {
+            _readBinaryEncoded(out, totalCount, encodingBuffer);
+        } finally {
+            _ioContext.releaseBase64Buffer(encodingBuffer);
+        }
         _tokenIncomplete = false;
         return totalCount;
+    }
+
+    private void _readBinaryEncoded(OutputStream out, int length, byte[] buffer)
+            throws IOException, JsonParseException
+    {
+        int outPtr = 0;
+        final int lastSafeOut = buffer.length - 7;
+        // first handle all full 7/8 units
+        while (length > 7) {
+            if ((_inputEnd - _inputPtr) < 8) {
+                _loadToHaveAtLeast(8);
+            }
+            int i1 = (_inputBuffer[_inputPtr++] << 25)
+                + (_inputBuffer[_inputPtr++] << 18)
+                + (_inputBuffer[_inputPtr++] << 11)
+                + (_inputBuffer[_inputPtr++] << 4);
+            int x = _inputBuffer[_inputPtr++];
+            i1 += x >> 3;
+            int i2 = ((x & 0x7) << 21)
+                + (_inputBuffer[_inputPtr++] << 14)
+                + (_inputBuffer[_inputPtr++] << 7)
+                + _inputBuffer[_inputPtr++];
+            // Ok: got our 7 bytes, just need to split, copy
+            buffer[outPtr++] = (byte)(i1 >> 24);
+            buffer[outPtr++] = (byte)(i1 >> 16);
+            buffer[outPtr++] = (byte)(i1 >> 8);
+            buffer[outPtr++] = (byte)i1;
+            buffer[outPtr++] = (byte)(i2 >> 16);
+            buffer[outPtr++] = (byte)(i2 >> 8);
+            buffer[outPtr++] = (byte)i2;
+            length -= 7;
+            // ensure there's always room for at least 7 bytes more after looping:
+            if (outPtr > lastSafeOut) {
+                out.write(buffer, 0, outPtr);
+                outPtr = 0;
+            }
+        }
+        // and then leftovers: n+1 bytes to decode n bytes
+        if (length > 0) {
+            if ((_inputEnd - _inputPtr) < (length+1)) {
+                _loadToHaveAtLeast(length+1);
+            }
+            int value = _inputBuffer[_inputPtr++];
+            for (int i = 1; i < length; ++i) {
+                value = (value << 7) + _inputBuffer[_inputPtr++];
+                buffer[outPtr++] = (byte) (value >> (7 - i));
+            }
+            // last byte is different, has remaining 1 - 6 bits, right-aligned
+            value <<= length;
+            buffer[outPtr++] = (byte) (value + _inputBuffer[_inputPtr++]);
+        }
+        if (outPtr > 0) {
+            out.write(buffer, 0, outPtr);
+        }
     }
     
     /*
@@ -1805,7 +1883,7 @@ public class SmileParser
             case 0: // long variable length ASCII
             	_decodeLongAscii();
             	return;
-            case 1: // long variable length unicode
+            case 1: // long variable length Unicode
             	_decodeLongUnicode();
             	return;
             case 2: // binary, 7-bit
