@@ -202,7 +202,7 @@ public class TestParserBinary
             p.close();
         }
     }
-    
+
     private byte[] _generateData(int size)
     {
         byte[] result = new byte[size];

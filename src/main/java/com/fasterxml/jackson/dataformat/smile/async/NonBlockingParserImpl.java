@@ -2,8 +2,8 @@ package com.fasterxml.jackson.dataformat.smile.async;
 
 import java.io.*;
 import java.lang.ref.SoftReference;
-import java.math.BigDecimal;
-import java.math.BigInteger;
+//import java.math.BigDecimal;
+//import java.math.BigInteger;
 import java.util.Arrays;
 
 import com.fasterxml.jackson.core.*;
