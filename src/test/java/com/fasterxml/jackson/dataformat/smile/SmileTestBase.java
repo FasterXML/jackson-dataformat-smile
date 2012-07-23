@@ -72,11 +72,11 @@ abstract class SmileTestBase
     }
     
     protected SmileParser _smileParser(SmileFactory f, byte[] input) throws IOException {
-        return f.createJsonParser(input);
+        return f.createParser(input);
     }
 
     protected SmileParser _smileParser(SmileFactory f, InputStream in) throws IOException {
-        return f.createJsonParser(in);
+        return f.createParser(in);
     }
     
     protected ObjectMapper smileMapper() {
@@ -139,7 +139,7 @@ abstract class SmileTestBase
         throws IOException
     {
         f.configure(SmileGenerator.Feature.WRITE_HEADER, addHeader);
-        return f.createJsonGenerator(result, null);
+        return f.createGenerator(result, null);
     }
 
     /*

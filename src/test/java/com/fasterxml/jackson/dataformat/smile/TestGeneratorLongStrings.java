@@ -19,7 +19,7 @@ public class TestGeneratorLongStrings extends SmileTestBase
         Random rnd = new Random(123);
 
         ByteArrayOutputStream out = new ByteArrayOutputStream(DOC_LEN);
-        SmileGenerator gen = f.createJsonGenerator(out);
+        SmileGenerator gen = f.createGenerator(out);
         gen.writeStartArray();
         
         // Let's create 1M doc, first using Strings
@@ -35,7 +35,7 @@ public class TestGeneratorLongStrings extends SmileTestBase
 
         // Then same with char[] 
         out = new ByteArrayOutputStream(DOC_LEN);
-        gen = f.createJsonGenerator(out);
+        gen = f.createGenerator(out);
         gen.writeStartArray();
         
         // Let's create 1M doc, first using Strings
@@ -82,7 +82,7 @@ public class TestGeneratorLongStrings extends SmileTestBase
     private void _verifyStrings(JsonFactory f, byte[] input, List<String> strings)
         throws IOException
     {
-        JsonParser jp = f.createJsonParser(input);
+        JsonParser jp = f.createParser(input);
         assertToken(JsonToken.START_ARRAY, jp.nextToken());
         for (int i = 0, len = strings.size(); i < len; ++i) {
             assertToken(JsonToken.VALUE_STRING, jp.nextToken());

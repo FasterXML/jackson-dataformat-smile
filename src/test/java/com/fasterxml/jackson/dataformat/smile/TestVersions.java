@@ -22,8 +22,8 @@ public class TestVersions extends SmileTestBase
         SmileFactory f = new SmileFactory();
         f.disable(SmileParser.Feature.REQUIRE_HEADER);
         assertVersion(f);
-        assertVersion(f.createJsonGenerator(new ByteArrayOutputStream()));
-        assertVersion(f.createJsonParser(new byte[0]));
+        assertVersion(f.createGenerator(new ByteArrayOutputStream()));
+        assertVersion(f.createParser(new byte[0]));
     }
 
     /*

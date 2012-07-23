@@ -107,7 +107,7 @@ public class TestGeneratorSymbols extends SmileTestBase
         factory.configure(SmileGenerator.Feature.CHECK_SHARED_NAMES, shareNames);
 
         ByteArrayOutputStream os = new ByteArrayOutputStream();
-        JsonGenerator gen = factory.createJsonGenerator(os);
+        JsonGenerator gen = factory.createGenerator(os);
         gen.writeStartObject();
         gen.writeObjectFieldStart("query");
         gen.writeStringField(FIELD_NAME, VALUE);
@@ -115,7 +115,7 @@ public class TestGeneratorSymbols extends SmileTestBase
         gen.writeEndObject();
         gen.close();
         
-        JsonParser parser = factory.createJsonParser(os.toByteArray());
+        JsonParser parser = factory.createParser(os.toByteArray());
         assertNull(parser.getCurrentToken());
         assertToken(JsonToken.START_OBJECT, parser.nextToken());
         assertToken(JsonToken.FIELD_NAME, parser.nextToken());

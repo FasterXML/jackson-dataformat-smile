@@ -77,8 +77,8 @@ public class Tool
     
     private void decode(InputStream in) throws IOException
     {
-        JsonParser jp = smileFactory.createJsonParser(in);
-        JsonGenerator jg = jsonFactory.createJsonGenerator(System.out, JsonEncoding.UTF8);
+        JsonParser jp = smileFactory.createParser(in);
+        JsonGenerator jg = jsonFactory.createGenerator(System.out, JsonEncoding.UTF8);
 
         while (true) {
             /* Just one trick: since Smile can have segments (multiple 'documents' in output
@@ -97,8 +97,8 @@ public class Tool
 
     private void encode(InputStream in) throws IOException
     {
-        JsonParser jp = jsonFactory.createJsonParser(in);
-        JsonGenerator jg = smileFactory.createJsonGenerator(System.out, JsonEncoding.UTF8);
+        JsonParser jp = jsonFactory.createParser(in);
+        JsonGenerator jg = smileFactory.createGenerator(System.out, JsonEncoding.UTF8);
         while ((jp.nextToken()) != null) {
             jg.copyCurrentEvent(jp);
         }
@@ -108,9 +108,9 @@ public class Tool
 
     private void verify(InputStream in, InputStream in2) throws IOException
     {
-        JsonParser jp = jsonFactory.createJsonParser(in);
+        JsonParser jp = jsonFactory.createParser(in);
         ByteArrayOutputStream bytes = new ByteArrayOutputStream(4000);
-        JsonGenerator jg = smileFactory.createJsonGenerator(bytes, JsonEncoding.UTF8);
+        JsonGenerator jg = smileFactory.createGenerator(bytes, JsonEncoding.UTF8);
 
         // First, read, encode in memory buffer
         while ((jp.nextToken()) != null) {
@@ -120,9 +120,9 @@ public class Tool
         jg.close();
 
         // and then re-read both, verify
-        jp = jsonFactory.createJsonParser(in2);
+        jp = jsonFactory.createParser(in2);
         byte[] smile = bytes.toByteArray();
-        JsonParser jp2 = smileFactory.createJsonParser(smile);
+        JsonParser jp2 = smileFactory.createParser(smile);
 
         JsonToken t;
         int count = 0;

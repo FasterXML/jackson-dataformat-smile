@@ -326,7 +326,7 @@ public class TestParser
             
             // force back-refs off, easier to trigger problem
             f.configure(SmileGenerator.Feature.CHECK_SHARED_NAMES, false);
-            SmileGenerator gen = f.createJsonGenerator(bytes);
+            SmileGenerator gen = f.createGenerator(bytes);
             
             int count = 0;
             do {
@@ -340,7 +340,7 @@ public class TestParser
         
             // and then read back
             byte[] json = bytes.toByteArray();
-            SmileParser jp = f.createJsonParser(new ByteArrayInputStream(json, offset, json.length-offset));
+            SmileParser jp = f.createParser(new ByteArrayInputStream(json, offset, json.length-offset));
             int i = 0;
 
             while (i < count) {
@@ -367,7 +367,7 @@ public class TestParser
         sf.configure(SmileGenerator.Feature.CHECK_SHARED_STRING_VALUES, true);
         ByteArrayOutputStream bytes = new ByteArrayOutputStream(100);
         
-        JsonGenerator jgen = sf.createJsonGenerator(bytes);
+        JsonGenerator jgen = sf.createGenerator(bytes);
         jgen.writeStartArray();
         jgen.writeStartObject();
         jgen.writeStringField("key", "value");

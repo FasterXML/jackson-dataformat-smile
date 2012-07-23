@@ -146,7 +146,7 @@ public class TestParserSymbolHandling
         f.configure(SmileGenerator.Feature.WRITE_HEADER, false);
         f.configure(SmileGenerator.Feature.CHECK_SHARED_NAMES, true);
         ByteArrayOutputStream out = new ByteArrayOutputStream(4000);
-        JsonGenerator gen = f.createJsonGenerator(out);
+        JsonGenerator gen = f.createGenerator(out);
         gen.writeStartArray();
         Random rnd = new Random(COUNT);
         for (int i = 0; i < COUNT; ++i) {
@@ -161,7 +161,7 @@ public class TestParserSymbolHandling
 
         // And verify 
         f.configure(SmileParser.Feature.REQUIRE_HEADER, false);
-        JsonParser jp = f.createJsonParser(json);
+        JsonParser jp = f.createParser(json);
         assertToken(JsonToken.START_ARRAY, jp.nextToken());
         rnd = new Random(COUNT);
         for (int i = 0; i < COUNT; ++i) {
@@ -199,7 +199,7 @@ public class TestParserSymbolHandling
         f.configure(SmileGenerator.Feature.CHECK_SHARED_STRING_VALUES, true);
 
         ByteArrayOutputStream out = new ByteArrayOutputStream(4000);
-        JsonGenerator gen = f.createJsonGenerator(out);
+        JsonGenerator gen = f.createGenerator(out);
         gen.writeStartArray();
         for (String value : SHARED_SYMBOLS) {
             gen.writeString(value);
@@ -209,7 +209,7 @@ public class TestParserSymbolHandling
         
         byte[] smile = out.toByteArray();
 
-        JsonParser jp = f.createJsonParser(smile);
+        JsonParser jp = f.createParser(smile);
         assertToken(JsonToken.START_ARRAY, jp.nextToken());
         for (String value : SHARED_SYMBOLS) {
             assertToken(JsonToken.VALUE_STRING, jp.nextToken());
@@ -223,7 +223,7 @@ public class TestParserSymbolHandling
         SmileFactory f = new SmileFactory();
         f.configure(SmileGenerator.Feature.CHECK_SHARED_STRING_VALUES, true);
         ByteArrayOutputStream out = new ByteArrayOutputStream(4000);
-        JsonGenerator gen = f.createJsonGenerator(out);
+        JsonGenerator gen = f.createGenerator(out);
         gen.writeStartObject();
         for (int i = 0; i < SHARED_SYMBOLS.length; ++i) {
             gen.writeFieldName("a"+i);
@@ -234,7 +234,7 @@ public class TestParserSymbolHandling
         
         byte[] smile = out.toByteArray();
 
-        JsonParser jp = f.createJsonParser(smile);
+        JsonParser jp = f.createParser(smile);
         assertToken(JsonToken.START_OBJECT, jp.nextToken());
         for (int i = 0; i < SHARED_SYMBOLS.length; ++i) {
             assertToken(JsonToken.FIELD_NAME, jp.nextToken());
@@ -251,7 +251,7 @@ public class TestParserSymbolHandling
         f.configure(SmileGenerator.Feature.CHECK_SHARED_STRING_VALUES, true);
         
         ByteArrayOutputStream out = new ByteArrayOutputStream(4000);
-        JsonGenerator gen = f.createJsonGenerator(out);
+        JsonGenerator gen = f.createGenerator(out);
         gen.writeStartObject();
 
         gen.writeFieldName("media");
@@ -290,7 +290,7 @@ public class TestParserSymbolHandling
         
         byte[] smile = out.toByteArray();
 
-        JsonParser jp = f.createJsonParser(smile);
+        JsonParser jp = f.createParser(smile);
         assertToken(JsonToken.START_OBJECT, jp.nextToken());
 
         assertToken(JsonToken.FIELD_NAME, jp.nextToken());
@@ -405,7 +405,7 @@ public class TestParserSymbolHandling
     {
         JsonFactory factory = new SmileFactory();
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        JsonGenerator gen = factory.createJsonGenerator(bos);
+        JsonGenerator gen = factory.createGenerator(bos);
         gen.writeStartObject();
         gen.writeFieldName("z_aaaabbbbccccddddee");
         gen.writeString("end");
@@ -414,7 +414,7 @@ public class TestParserSymbolHandling
         gen.writeEndObject();
         gen.close();
 
-        JsonParser parser = factory.createJsonParser(bos.toByteArray());
+        JsonParser parser = factory.createParser(bos.toByteArray());
         assertToken(JsonToken.START_OBJECT, parser.nextToken());
 
         assertToken(JsonToken.FIELD_NAME, parser.nextToken());
@@ -439,7 +439,7 @@ public class TestParserSymbolHandling
         JsonFactory factory = new SmileFactory();
 
         ByteArrayOutputStream bos1 = new ByteArrayOutputStream();
-        JsonGenerator generator = factory.createJsonGenerator(bos1);
+        JsonGenerator generator = factory.createGenerator(bos1);
         generator.writeStartObject();
         generator.writeFieldName("query");
         generator.writeStartObject();
@@ -451,7 +451,7 @@ public class TestParserSymbolHandling
         generator.writeEndObject();
         generator.close();
 
-        JsonParser parser = factory.createJsonParser(bos1.toByteArray());
+        JsonParser parser = factory.createParser(bos1.toByteArray());
         JsonToken token = parser.nextToken();
         assertToken(JsonToken.START_OBJECT, token);
         token = parser.nextToken();
@@ -473,7 +473,7 @@ public class TestParserSymbolHandling
         parser.close();
 
         ByteArrayOutputStream bos2 = new ByteArrayOutputStream();
-        generator = factory.createJsonGenerator(bos2);
+        generator = factory.createGenerator(bos2);
         generator.writeStartObject();
         generator.writeFieldName("query");
         generator.writeStartObject();
@@ -487,7 +487,7 @@ public class TestParserSymbolHandling
         generator.writeEndObject();
         generator.close();
 
-        parser = factory.createJsonParser(bos2.toByteArray());
+        parser = factory.createParser(bos2.toByteArray());
         token = parser.nextToken();
         assertToken(JsonToken.START_OBJECT, token);
         token = parser.nextToken();
@@ -526,7 +526,7 @@ public class TestParserSymbolHandling
         f.configure(SmileGenerator.Feature.WRITE_HEADER, true);
         f.configure(SmileGenerator.Feature.CHECK_SHARED_STRING_VALUES, enableSharing);
         ByteArrayOutputStream out = new ByteArrayOutputStream(4000);
-        JsonGenerator gen = f.createJsonGenerator(out);
+        JsonGenerator gen = f.createGenerator(out);
         gen.writeStartArray();
         Random rnd = new Random(COUNT);
         for (int i = 0; i < COUNT; ++i) {
@@ -540,7 +540,7 @@ public class TestParserSymbolHandling
     private void verifyStringValues(byte[] json, int COUNT) throws IOException
     {
         SmileFactory f = new SmileFactory();
-        JsonParser jp = f.createJsonParser(json);
+        JsonParser jp = f.createParser(json);
         assertToken(JsonToken.START_ARRAY, jp.nextToken());
         Random rnd = new Random(COUNT);
         for (int i = 0; i < COUNT; ++i) {

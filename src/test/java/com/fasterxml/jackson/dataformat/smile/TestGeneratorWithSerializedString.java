@@ -19,11 +19,11 @@ public class TestGeneratorWithSerializedString extends SmileTestBase
     {
         SmileFactory sf = new SmileFactory();
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        JsonGenerator jgen = sf.createJsonGenerator(out);
+        JsonGenerator jgen = sf.createGenerator(out);
         _writeSimple(jgen);
         jgen.close();
         byte[] smileB = out.toByteArray();
-        _verifySimple(sf.createJsonParser(smileB));
+        _verifySimple(sf.createParser(smileB));
     }
 
     /*

@@ -35,12 +35,12 @@ public class TestGeneratorBufferRecycle extends SmileTestBase
         ByteArrayOutputStream os = new ByteArrayOutputStream();
 
         // generate
-        JsonGenerator generator = factory.createJsonGenerator(os);
+        JsonGenerator generator = factory.createGenerator(os);
         writeMap(generator, map);
         generator.close();
 
         // parse
-        JsonParser parser = factory.createJsonParser(os.toByteArray());
+        JsonParser parser = factory.createParser(os.toByteArray());
         while (parser.nextToken() != null) {
 
         }

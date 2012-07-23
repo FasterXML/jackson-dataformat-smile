@@ -50,7 +50,7 @@ public class TestSmileGeneratorBinary extends SmileTestBase
     public void testBinaryWithoutLength() throws Exception
     {
         final SmileFactory f = new SmileFactory();
-        JsonGenerator jg = f.createJsonGenerator(new ByteArrayOutputStream());
+        JsonGenerator jg = f.createGenerator(new ByteArrayOutputStream());
         try {
             jg.writeBinary(new ByteArrayInputStream(new byte[1]), -1);
             fail("Should have failed");
@@ -79,14 +79,14 @@ public class TestSmileGeneratorBinary extends SmileTestBase
             JsonGenerator jgen;
             
             final ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-            jgen = f.createJsonGenerator(bytes);
+            jgen = f.createGenerator(bytes);
             jgen.writeStartArray();
             InputStream data = new ThrottledInputStream(INPUT, chunkSize);
             jgen.writeBinary(data, INPUT.length);
             jgen.writeEndArray();
             jgen.close();
 
-            JsonParser jp = f.createJsonParser(bytes.toByteArray());
+            JsonParser jp = f.createParser(bytes.toByteArray());
             assertToken(JsonToken.START_ARRAY, jp.nextToken());
             assertToken(JsonToken.VALUE_EMBEDDED_OBJECT, jp.nextToken());
             byte[] b = jp.getBinaryValue();

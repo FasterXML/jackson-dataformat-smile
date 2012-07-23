@@ -41,7 +41,7 @@ public class TestDocBoundary
         for (boolean addHeader : new boolean[] { false, true }) {
             SmileFactory f = smileFactory(false, false, false);
             ByteArrayOutputStream out = new ByteArrayOutputStream();
-            SmileGenerator jg = f.createJsonGenerator(out);
+            SmileGenerator jg = f.createGenerator(out);
             jg.writeNumber(1);
             if (addHeader) jg.writeHeader();
             jg.writeNumber(2);
@@ -49,7 +49,7 @@ public class TestDocBoundary
             jg.writeNumber(3);
             jg.close();
 
-            SmileParser jp = f.createJsonParser(out.toByteArray());
+            SmileParser jp = f.createParser(out.toByteArray());
             assertToken(JsonToken.VALUE_NUMBER_INT, jp.nextToken());
             assertEquals(1, jp.getIntValue());
             if (addHeader) {
@@ -77,19 +77,19 @@ public class TestDocBoundary
     {
         SmileFactory f = smileFactory(false, addHeader, addEndMarker);
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        SmileGenerator jg = f.createJsonGenerator(out);
+        SmileGenerator jg = f.createGenerator(out);
         // First doc, JSON Object
         jg.writeStartObject();
         jg.writeEndObject();
         jg.close();
         // and second, array
-        jg = f.createJsonGenerator(out);
+        jg = f.createGenerator(out);
         jg.writeStartArray();
         jg.writeEndArray();
         jg.close();
 
         // and read it back
-        SmileParser jp = f.createJsonParser(out.toByteArray());
+        SmileParser jp = f.createParser(out.toByteArray());
         assertToken(JsonToken.START_OBJECT, jp.nextToken());
         assertToken(JsonToken.END_OBJECT, jp.nextToken());
 

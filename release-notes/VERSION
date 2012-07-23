@@ -17,6 +17,11 @@ New features:
 * [Issue-4]: Implement `SmileParser.readBinary(...)` method to allow
   incremental decoding of large binary payloads
 
+Other:
+
+* Override 'createParser()' and 'createGenerator()' methods for SmileFactory
+ to support [jackson-core/Issue-25]
+
 ------------------------------------------------------------------------
 === History: ===
 ------------------------------------------------------------------------
