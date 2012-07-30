@@ -6,7 +6,9 @@ Release date:
 Description:
   Another patch release for 2.0.0.
 
-Fixes:
+No fixes or changes, released along with other core components.
+Note, however, that core 2.0.5 contains significant fixes; so upgrade
+is recommended.
 
 ------------------------------------------------------------------------
 === History: ===
