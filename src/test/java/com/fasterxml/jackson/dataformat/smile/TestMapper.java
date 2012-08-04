@@ -26,4 +26,17 @@ public class TestMapper extends SmileTestBase
         assertNotNull(result.bytes);
         Assert.assertArrayEquals(input, result.bytes);
     }
+
+    // @since 2.1
+    public void testCopy() throws IOException
+    {
+        ObjectMapper mapper1 = smileMapper();
+        ObjectMapper mapper2 = mapper1.copy();
+        
+        assertNotSame(mapper1, mapper2);
+        assertNotSame(mapper1.getJsonFactory(), mapper2.getJsonFactory());
+        assertEquals(SmileFactory.class, mapper2.getJsonFactory().getClass());
+    }
 }
+
+

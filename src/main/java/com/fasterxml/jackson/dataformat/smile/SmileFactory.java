@@ -22,7 +22,7 @@ import com.fasterxml.jackson.core.io.IOContext;
  * textual JSON (when parsing), or throw exception (when trying to create
  * generator).
  * 
- * @author tatu
+ * @author Tatu Saloranta
  */
 public class SmileFactory extends JsonFactory
 {
@@ -83,6 +83,15 @@ public class SmileFactory extends JsonFactory
 
     public SmileFactory(ObjectCodec oc) { super(oc); }
 
+    // @since 2.1
+    @Override
+    public SmileFactory copy()
+    {
+        _checkInvalidCopy(SmileFactory.class);
+        // note: as with base class, must NOT copy mapper reference
+        return new SmileFactory(null);
+    }
+    
     public void delegateToTextual(boolean state) {
         _cfgDelegateToTextual = state;
     }
