@@ -16,32 +16,30 @@
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion> 
+
   <parent>
     <groupId>com.fasterxml</groupId>
     <artifactId>oss-parent</artifactId>
-    <version>2</version>
+    <version>3</version>
   </parent>
+
   <groupId>com.fasterxml.jackson.dataformat</groupId>
   <artifactId>jackson-dataformat-smile</artifactId>
   <version>2.1.0-SNAPSHOT</version>
+
   <name>Jackson-dataformat-Smile</name>
   <description>Support for reading and writing Smile ("binary JSON")
 encoded data using Jackson abstractions (streaming API, data binding,
 tree model)
   </description>
   <url>http://wiki.fasterxml.com/JacksonForSmile</url>
+
   <scm>
     <connection>scm:git:git@github.com:FasterXML/jackson-dataformat-smile.git</connection>
     <developerConnection>scm:git:git@github.com:FasterXML/jackson-dataformat-smile.git</developerConnection>
     <url>http://github.com/FasterXML/jackson-dataformat-smile</url>    
   </scm>
-  <developers>
-    <developer>
-       <id>tatu</id>
-       <name>Tatu Saloranta</name>
-        <email>tatu@fasterxml.com</email>
-    </developer>
-  </developers>
+
   <properties>
     <!--
      | Configuration properties for the OSGi maven-bundle-plugin
@@ -70,9 +68,10 @@ tree model)
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <version>4.8.2</version>
+      <version>4.10</version>
       <scope>test</scope>
     </dependency>
+
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>
@@ -84,38 +83,9 @@ tree model)
   <build>
     <resources><!--  need to enable filtering to add version info -->
       <resource>
-        <directory>src/main/resources</directory>
+        <directory>${basedir}/src/main/resources</directory>
         <filtering>true</filtering>
-      </resource>  
+      </resource>
     </resources>
-    <plugins>
-        <!-- Plus, let's make jars OSGi bundles as well  -->
-        <plugin>
-          <groupId>org.apache.felix</groupId>
-          <artifactId>maven-bundle-plugin</artifactId>
-          <version>2.3.7</version>
-          <extensions>true</extensions>
-          <configuration>
-            <instructions>
-              <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
-              <Bundle-Vendor>fasterml.com</Bundle-Vendor>
-              <Import-Package>
-com.fasterxml.jackson.core
-,com.fasterxml.jackson.core.base
-,com.fasterxml.jackson.core.format
-,com.fasterxml.jackson.core.io
-,com.fasterxml.jackson.core.json
-,com.fasterxml.jackson.core.sym
-,com.fasterxml.jackson.core.util
-</Import-Package>
-              <Private-Package>
-</Private-Package>
-              <Export-Package>
-com.fasterxml.jackson.dataformat.smile
-</Export-Package>
-            </instructions>
-          </configuration>
-        </plugin>
-    </plugins>
   </build>
 </project>
