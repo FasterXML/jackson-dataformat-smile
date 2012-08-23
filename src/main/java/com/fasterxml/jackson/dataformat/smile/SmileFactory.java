@@ -347,6 +347,13 @@ public class SmileFactory extends JsonFactory
         throw new UnsupportedOperationException("Can not create generator for non-byte-based target");
     }
 
+    @Override
+    protected JsonGenerator _createUTF8JsonGenerator(OutputStream out, IOContext ctxt)
+        throws IOException
+    {
+        return _createJsonGenerator(out, ctxt);
+    }
+    
     //public BufferRecycler _getBufferRecycler()
 
     @Override

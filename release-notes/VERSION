@@ -6,9 +6,10 @@ Release date:
 Description:
   Another patch release for 2.0.0.
 
-No fixes or changes, released along with other core components.
-Note, however, that core 2.0.5 contains significant fixes; so upgrade
-is recommended.
+Fixes:
+
+* [Issue#6]: ObjectMapper.writeValue(File, ...) was not working due to
+ missing override in `SmileFactory`
 
 ------------------------------------------------------------------------
 === History: ===
