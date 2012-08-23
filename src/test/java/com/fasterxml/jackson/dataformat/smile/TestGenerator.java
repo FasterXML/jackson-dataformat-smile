@@ -3,6 +3,8 @@ package com.fasterxml.jackson.dataformat.smile;
 import java.io.*;
 import java.util.HashMap;
 
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.smile.SmileConstants;
@@ -204,6 +206,22 @@ public class TestGenerator
         assertEquals(1, root.size());
     }
 
+    // [Issue#6], missing overrides for File-backed generator
+    public void testWriteToFile() throws Exception
+    {
+        final SmileFactory smileFactory = new SmileFactory();
+        ObjectMapper mapper = new ObjectMapper(smileFactory);
+        File f = File.createTempFile("test", ".tst");
+        mapper.writeValue(f, Integer.valueOf(3));
+        
+        JsonParser jp = smileFactory.createParser(f);
+        assertToken(JsonToken.VALUE_NUMBER_INT, jp.nextToken());
+        assertEquals(3, jp.getIntValue());
+        assertNull(jp.nextToken());
+        jp.close();
+        f.delete();
+    }
+    
     /*
     /**********************************************************
     /* Helper methods

@@ -399,6 +399,14 @@ public class SmileFactory extends JsonFactory
         IOContext ctxt = _createContext(out, false);
         return _createGenerator(out, ctxt);
     }
+
+    @Deprecated
+    @Override
+    protected SmileGenerator _createUTF8JsonGenerator(OutputStream out, IOContext ctxt)
+        throws IOException
+    {
+        return _createGenerator(out, ctxt);
+    }
     
     /*
     /******************************************************
@@ -463,6 +471,11 @@ public class SmileFactory extends JsonFactory
         throw new UnsupportedOperationException("Can not create generator for non-byte-based target");
     }
 
+    @Override
+    protected JsonGenerator _createUTF8Generator(OutputStream out, IOContext ctxt) throws IOException {
+        return _createGenerator(out, ctxt);
+    }
+    
     //public BufferRecycler _getBufferRecycler()
 
     @Override
