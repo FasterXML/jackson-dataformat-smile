@@ -28,8 +28,11 @@ public class TestSmileParser
         // and then test passing one
         SmileParser p = _smileParser(data, false);
         assertToken(JsonToken.START_ARRAY, p.nextToken());
+        assertNull(p.getCurrentName());
         assertToken(JsonToken.VALUE_NULL, p.nextToken());
+        assertNull(p.getCurrentName());
         assertToken(JsonToken.END_ARRAY, p.nextToken());
+        assertNull(p.getCurrentName());
         assertNull(p.nextToken());
     }
 
@@ -38,15 +41,21 @@ public class TestSmileParser
     	byte[] data = _smileDoc("[ true, null, false ]");
     	SmileParser p = _smileParser(data);
     	assertNull(p.getCurrentToken());
+        assertNull(p.getCurrentName());
     	assertToken(JsonToken.START_ARRAY, p.nextToken());
+        assertNull(p.getCurrentName());
     	assertToken(JsonToken.VALUE_TRUE, p.nextToken());
+        assertNull(p.getCurrentName());
     	assertToken(JsonToken.VALUE_NULL, p.nextToken());
+        assertNull(p.getCurrentName());
     	assertToken(JsonToken.VALUE_FALSE, p.nextToken());
+        assertNull(p.getCurrentName());
     	assertToken(JsonToken.END_ARRAY, p.nextToken());
+        assertNull(p.getCurrentName());
     	assertNull(p.nextToken());
     	p.close();
     }
-    
+
     public void testArrayWithString() throws IOException
     {
     	byte[] data = _smileDoc("[ \"abc\" ]");
@@ -204,6 +213,7 @@ public class TestSmileParser
         assertToken(JsonToken.FIELD_NAME, p.nextToken()); // b
         assertEquals("b", p.getCurrentName());
         assertToken(JsonToken.START_ARRAY, p.nextToken());
+        assertEquals("b", p.getCurrentName());
         assertToken(JsonToken.VALUE_NUMBER_INT, p.nextToken());
         assertToken(JsonToken.END_ARRAY, p.nextToken());
         assertToken(JsonToken.END_OBJECT, p.nextToken());

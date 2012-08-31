@@ -1,19 +1,26 @@
-Version: 2.0.5
+Version: 2.0.6
 
 Release date:
-  23-Aug-2012
+  xx-Sep-2012
 
 Description:
   Another patch release for 2.0.0.
 
 Fixes:
 
-* [Issue#6]: ObjectMapper.writeValue(File, ...) was not working due to
- missing override in `SmileFactory`
+* [Issue#7]: SmileParser.getCurrentName() "off-by-one" for START_OBJECT/ARRAY
+ (same as earlier [JACKSON-395])
 
 ------------------------------------------------------------------------
 === History: ===
 ------------------------------------------------------------------------
+
+2.0.5 (23-Aug-2012)
+
+Fixes:
+
+* [Issue#6]: ObjectMapper.writeValue(File, ...) was not working due to
+ missing override in `SmileFactory`
 
 2.0.4 (26-May-2012)
 

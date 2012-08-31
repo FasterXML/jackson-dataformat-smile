@@ -741,11 +741,8 @@ public class SmileParser
         _seenStringValues[_seenStringValueCount++] = _textBuffer.contentsAsString();
     }
 
-    @Override
-    public String getCurrentName() throws IOException, JsonParseException
-    {
-        return _parsingContext.getCurrentName();
-    }
+    // base impl is fine:
+    //public String getCurrentName() throws IOException, JsonParseException
 
     @Override
     public NumberType getNumberType()
