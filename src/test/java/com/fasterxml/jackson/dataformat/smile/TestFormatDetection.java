@@ -22,17 +22,22 @@ public class TestFormatDetection extends SmileTestBase
     /**********************************************************
      */
 
-    public void testSimpleWithJSON() throws Exception
+    public void testSimple() throws Exception
     {
         final ObjectMapper mapper = new ObjectMapper();
         final ObjectReader jsonReader = mapper.reader(POJO.class);
+        final String JSON = "{\"name\":\"Bob\", \"id\":3}";
 
-        byte[] doc = _smileDoc("{\"name\":\"Bob\", \"id\":3}", true);
+        byte[] doc = _smileDoc(JSON, true);
         
         ObjectReader detecting = jsonReader.withFormatDetection(jsonReader,
                 jsonReader.with(new SmileFactory()));
         POJO pojo = detecting.readValue(doc);
-        assertNotNull(pojo);
+        assertEquals(3, pojo.id);
+        assertEquals("Bob", pojo.name);
+
+        // let's verify it also works for plain JSON...
+        pojo = detecting.readValue(JSON.getBytes("UTF-8"));
         assertEquals(3, pojo.id);
         assertEquals("Bob", pojo.name);
     }
