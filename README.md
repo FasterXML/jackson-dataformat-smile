@@ -14,7 +14,7 @@ To use this extension on Maven-based projects, use following dependency:
     <dependency>
       <groupId>com.fasterxml.jackson.dataformat</groupId>
       <artifactId>jackson-dataformat-smile</artifactId>
-      <version>2.0.0-SNAPSHOT</version>
+      <version>2.0.6</version>
     </dependency>
 
 (or whatever version is most up-to-date at the moment)
