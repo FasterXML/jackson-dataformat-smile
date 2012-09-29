@@ -10,6 +10,8 @@ Fixes:
 
 * [Issue#7]: SmileParser.getCurrentName() "off-by-one" for START_OBJECT/ARRAY
  (same as earlier [JACKSON-395])
+* [Issue#8]: Lost String index for `JsonGenerator` with resize, hash collision
+ (reported by M.T.Yurt)
 
 ------------------------------------------------------------------------
 === History: ===
