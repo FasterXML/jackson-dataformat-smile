@@ -263,7 +263,7 @@ public class SmileGenerator
      */
     
     /**
-     * This <code>ThreadLocal</code> contains a {@link java.lang.ref.SoftRerefence}
+     * This <code>ThreadLocal</code> contains a {@link java.lang.ref.SoftReference}
      * to a buffer recycler used to provide a low-cost
      * buffer recycling for Smile-specific buffers.
      */
@@ -2201,10 +2201,12 @@ public class SmileGenerator
                 _seenNames = new SharedStringNode[MAX_SHARED_NAMES];
                 final int mask = MAX_SHARED_NAMES-1;
                 for (SharedStringNode node : old) {
-                    for (; node != null; node = node.next) {
+                    while (node != null) {
                         int ix = node.value.hashCode() & mask;
+                        SharedStringNode next = node.next;
                         node.next = _seenNames[ix];
                         _seenNames[ix] = node;
+                        node = next;
                     }
                 }
             }
