@@ -6,7 +6,7 @@ import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonToken;
 
 /**
- * Mix-in interface used with {@link com.fasterxml.jackson.JsonParser},
+ * Mix-in interface used with {@link com.fasterxml.jackson.core.JsonParser},
  * extending it with features needed to process data in non-blocking
  * ("asynchronous")
  */
@@ -25,7 +25,7 @@ public interface NonBlockingParser
      * byte, but in boundaries zero bytes is available).
      * 
      * @return Token that will eventually be returned with
-     *    a call to {@link JsonParser#nextToken}, if known
+     *    a call to {@link com.fasterxml.jackson.core.JsonParser#nextToken}, if known
      */
     public JsonToken peekNextToken() throws IOException, JsonParseException;
 }

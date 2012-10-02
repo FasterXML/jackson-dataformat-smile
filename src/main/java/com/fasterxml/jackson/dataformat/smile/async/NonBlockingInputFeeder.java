@@ -3,7 +3,8 @@ package com.fasterxml.jackson.dataformat.smile.async;
 import java.io.IOException;
 
 /**
- * Interface used by non-blocking {@link JsonParser} to get more input to parse.
+ * Interface used by non-blocking {@link com.fasterxml.jackson.core.JsonParser}
+ * to get more input to parse.
  * It is accessed by entity that feeds content to parse; at any given point
  * only one chunk of content can be processed so caller has to take care to
  * only feed more content when existing content has been parsed (which occurs

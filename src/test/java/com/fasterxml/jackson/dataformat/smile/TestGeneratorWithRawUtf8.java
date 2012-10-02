@@ -14,8 +14,7 @@ import com.fasterxml.jackson.dataformat.smile.SmileGenerator;
 import com.fasterxml.jackson.dataformat.smile.SmileParser;
 
 /**
- * Test similar to {@link org.codehaus.jackson.main.TestRawStringWriting},
- * to verify handling of "raw String value" write methods that by-pass
+ * Test to verify handling of "raw String value" write methods that by-pass
  * most encoding steps, for potential higher output speed (in cases where
  * input naturally comes as UTF-8 encoded byte arrays).
  *
