@@ -1,14 +1,23 @@
-Version: 2.1.0
+Version: 2.1.1
 
 Release date:
-  08-Oct-2012
 
 Description:
+  First patch release for 2.1.
+
+Fixes:
+
+* Do not throw an exception for empty content, even if header is
+  required; let parser implementation return null from 'nextToken()'
+
+------------------------------------------------------------------------
+=== History: ===
+------------------------------------------------------------------------
+
+2.1.0 (08-Oct-2012)
   A minor 2.x release. The biggest additional new features are in streaming
   processing, to support large binary data chunks without having to manually
   create separate chunks.
-
-Fixes:
 
 New features:
 
@@ -21,10 +30,6 @@ Other:
 
 * Override 'createParser()' and 'createGenerator()' methods for SmileFactory
  to support [jackson-core/Issue-25]
-
-------------------------------------------------------------------------
-=== History: ===
-------------------------------------------------------------------------
 
 2.0.2 (14-May-2012)
 

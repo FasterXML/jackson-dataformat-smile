@@ -94,15 +94,21 @@ public class SmileParserBootstrapper
         BytesToNameCanonicalizer can = rootByteSymbols.makeChild(true, internNames);
     	// We just need a single byte, really, to know if it starts with header
     	ensureLoaded(1);
-        SmileParser p =  new SmileParser(_context, generalParserFeatures, smileFeatures,
-        		codec, can, 
-        		_in, _inputBuffer, _inputPtr, _inputEnd, _bufferRecyclable);
+        SmileParser p = new SmileParser(_context, generalParserFeatures, smileFeatures,
+                codec, can, 
+                _in, _inputBuffer, _inputPtr, _inputEnd, _bufferRecyclable);
         boolean hadSig = false;
         if (_inputPtr < _inputEnd) { // only false for empty doc
             if (_inputBuffer[_inputPtr] == SmileConstants.HEADER_BYTE_1) {
                 // need to ensure it gets properly handled so caller won't see the signature
                 hadSig = p.handleSignature(true, true);
             }
+    	} else {
+    	    /* 11-Oct-2012, tatu: Actually, let's allow empty documents even if
+    	     *   header signature would otherwise be needed. This is useful for
+    	     *   JAX-RS provider, empty PUT/POST payloads.
+    	     */
+    	    return p;
     	}
     	if (!hadSig && (smileFeatures & SmileParser.Feature.REQUIRE_HEADER.getMask()) != 0) {
     	    // Ok, first, let's see if it looks like plain JSON...
