@@ -31,6 +31,31 @@ Other:
 * Override 'createParser()' and 'createGenerator()' methods for SmileFactory
  to support [jackson-core/Issue-25]
 
+2.0.6 (05-Sep-2012)
+
+Fixes:
+
+* [Issue#7]: SmileParser.getCurrentName() "off-by-one" for START_OBJECT/ARRAY
+ (same as earlier [JACKSON-395])
+* [Issue#8]: Lost String index for `JsonGenerator` with resize, hash collision
+ (reported by M.T.Yurt)
+
+
+2.0.5 (23-Aug-2012)
+
+Fixes:
+
+* [Issue#6]: ObjectMapper.writeValue(File, ...) was not working due to
+ missing override in `SmileFactory`
+
+2.0.4 (26-May-2012)
+
+No fixes or changes, released along with other core components
+
+2.0.3: 
+
+skipped -- only some modules used that version
+
 2.0.2 (14-May-2012)
 
 Fixes:
