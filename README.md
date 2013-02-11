@@ -13,11 +13,13 @@ Module is fully usable, but depends on Jackson 2.0; older 1.x version is still a
 
 To use this extension on Maven-based projects, use following dependency:
 
-    <dependency>
-      <groupId>com.fasterxml.jackson.dataformat</groupId>
-      <artifactId>jackson-dataformat-smile</artifactId>
-      <version>2.1.1</version>
-    </dependency>
+```xml
+<dependency>
+  <groupId>com.fasterxml.jackson.dataformat</groupId>
+  <artifactId>jackson-dataformat-smile</artifactId>
+  <version>2.1.1</version>
+</dependency>
+```
 
 (or whatever version is most up-to-date at the moment)
 
@@ -25,10 +27,12 @@ To use this extension on Maven-based projects, use following dependency:
 
 Basic usage is by using `SmileFactory` in places where you would usually use `JsonFactory`:
 
-    SmileFactory f = new SmileFactory();
-    // can configure instance with 'SmileParser.Feature' and 'SmileGenerator.Feature'
-    ObjectMapper mapper = new ObjectMapper(f);
-    // and then read/write data as usual
-    SomeType value = ...;
-    byte[] smileData = mapper.writeValueAsBytes(value);
-    SomeType otherValue = mapper.readValue(smileData, SomeType.class);
+```java
+SmileFactory f = new SmileFactory();
+// can configure instance with 'SmileParser.Feature' and 'SmileGenerator.Feature'
+ObjectMapper mapper = new ObjectMapper(f);
+// and then read/write data as usual
+SomeType value = ...;
+byte[] smileData = mapper.writeValueAsBytes(value);
+SomeType otherValue = mapper.readValue(smileData, SomeType.class);
+```
