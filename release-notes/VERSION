@@ -1,5 +1,5 @@
 Project: jackson-dataformat-smile
-Version: 2.1.4 (31-Jan-2013)
+Version: 2.1.4 (26-Feb-2013)
 
 * Added checks in `SmileGenerator.writeBinary(InputStream)` to avoid infinite
   looping (related to #55 of jackson-core)
