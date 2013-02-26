@@ -2085,7 +2085,14 @@ public class SmileGenerator
         maxRead = Math.min(maxRead, readBuffer.length);
         
         do {
-            int count = in.read(readBuffer, inputEnd, maxRead - inputEnd);
+            /* 26-Feb-2013, tatu: Similar to jackson-core issue #55, need to ensure
+             *   we have something to read.
+             */
+            int length = maxRead - inputEnd;
+            if (length == 0) {
+                break;
+            }
+            int count = in.read(readBuffer, inputEnd, length);            
             if (count < 0) {
                 return inputEnd;
             }
