@@ -116,7 +116,7 @@ abstract class SmileTestBase
     protected byte[] _smileDoc(SmileFactory smileFactory, String json, boolean writeHeader) throws IOException
     {
         JsonFactory jf = new JsonFactory();
-    	JsonParser jp = jf.createJsonParser(json);
+    	JsonParser jp = jf.createParser(json);
     	ByteArrayOutputStream out = new ByteArrayOutputStream();
     	JsonGenerator jg = smileGenerator(out, writeHeader);
     	

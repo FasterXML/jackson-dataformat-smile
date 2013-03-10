@@ -26,6 +26,8 @@ import com.fasterxml.jackson.core.io.IOContext;
  */
 public class SmileFactory extends JsonFactory
 {
+    private static final long serialVersionUID = -1696783009312472365L;
+
     /**
      * Name used to identify Smile format.
      * (and returned by {@link #getFormatName()}
@@ -104,7 +106,7 @@ public class SmileFactory extends JsonFactory
 
     @Override
     public Version version() {
-        return ModuleVersion.instance.version();
+        return PackageVersion.VERSION;
     }
     
     /*

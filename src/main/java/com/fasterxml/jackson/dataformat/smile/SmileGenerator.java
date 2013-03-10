@@ -401,7 +401,7 @@ public class SmileGenerator
 
     @Override
     public Version version() {
-        return ModuleVersion.instance.version();
+        return PackageVersion.VERSION;
     }
     
     /*

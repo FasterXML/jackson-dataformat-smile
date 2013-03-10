@@ -312,7 +312,7 @@ public class SmileParser
 
     @Override
     public Version version() {
-        return ModuleVersion.instance.version();
+        return PackageVersion.VERSION;
     }
     
     /*
@@ -1048,8 +1048,9 @@ public class SmileParser
             return Boolean.TRUE;
         case VALUE_FALSE:
             return Boolean.FALSE;
+        default:
+            return null;
         }
-        return null;
     }
     
     /*

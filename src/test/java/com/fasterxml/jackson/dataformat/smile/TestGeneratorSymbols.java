@@ -141,7 +141,7 @@ public class TestGeneratorSymbols extends SmileTestBase
          */
         //Enable string value sharing
         JsonFactory jf = new JsonFactory();
-        JsonParser jp = jf.createJsonParser(json);
+        JsonParser jp = jf.createParser(json);
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         SmileFactory sf = new SmileFactory();
 
