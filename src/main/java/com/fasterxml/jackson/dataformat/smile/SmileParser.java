@@ -130,7 +130,7 @@ public class SmileParser
      * some access (or skipped to obtain the next token)
      */
     protected boolean _tokenIncomplete = false;
-    
+
     /**
      * Type byte of the current token
      */
@@ -196,7 +196,7 @@ public class SmileParser
      */
     final protected static ThreadLocal<SoftReference<SmileBufferRecycler<String>>> _smileRecyclerRef
         = new ThreadLocal<SoftReference<SmileBufferRecycler<String>>>();
-    
+
     /*
     /**********************************************************
     /* Life-cycle
@@ -748,10 +748,10 @@ public class SmileParser
     public NumberType getNumberType()
         throws IOException, JsonParseException
     {
-    	if (_got32BitFloat) {
-    	    return NumberType.FLOAT;
-    	}
-    	return super.getNumberType();
+        if (_got32BitFloat) {
+            return NumberType.FLOAT;
+        }
+        return super.getNumberType();
     }
 
     /*
@@ -1172,6 +1172,28 @@ public class SmileParser
         return 0;
     }
 
+    @Override
+    public String getValueAsString() throws IOException, JsonParseException
+    {
+        if (_currToken != JsonToken.VALUE_STRING) {
+            if (_currToken == null || _currToken == JsonToken.VALUE_NULL || !_currToken.isScalarValue()) {
+                return null;
+            }
+        }
+        return getText();
+    }
+
+    @Override
+    public String getValueAsString(String defaultValue) throws IOException, JsonParseException
+    {
+        if (_currToken != JsonToken.VALUE_STRING) {
+            if (_currToken == null || _currToken == JsonToken.VALUE_NULL || !_currToken.isScalarValue()) {
+                return defaultValue;
+            }
+        }
+        return getText();
+    }
+    
     /*
     /**********************************************************
     /* Public API, access to token information, binary
