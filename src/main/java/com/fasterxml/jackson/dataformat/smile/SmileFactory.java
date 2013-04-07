@@ -116,17 +116,18 @@ public class SmileFactory extends JsonFactory
      */
     
     @Override
-    public String getFormatName()
-    {
+    public String getFormatName() {
         return FORMAT_NAME_SMILE;
     }
-    
+
+    // Defaults work fine for this:
+    // public boolean canUseSchema(FormatSchema schema) { }
+
     /**
      * Sub-classes need to override this method (as of 1.8)
      */
     @Override
-    public MatchStrength hasFormat(InputAccessor acc) throws IOException
-    {
+    public MatchStrength hasFormat(InputAccessor acc) throws IOException {
         return SmileParserBootstrapper.hasSmileFormat(acc);
     }
     
