@@ -1,11 +1,16 @@
 Project: jackson-dataformat-smile
-Version: 2.2.0 (22-Apr-2013)
+Version: 2.2.1 (xx-May-2013)
 
-New minor version, no functional changes.
+- Fixed `SmileFactory.copy()` to retain configuration; also means that
+  underlying `JsonFactory` MUST be 2.2.1 or above (alas)
 
 ------------------------------------------------------------------------
 === History: ===
 ------------------------------------------------------------------------
+
+2.2.0 (22-Apr-2013)
+
+New minor version, no functional changes.
 
 2.1.4 (26-Feb-2013)
 

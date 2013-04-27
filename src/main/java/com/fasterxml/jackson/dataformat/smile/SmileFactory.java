@@ -28,6 +28,12 @@ public class SmileFactory extends JsonFactory
 {
     private static final long serialVersionUID = -1696783009312472365L;
 
+    /*
+    /**********************************************************
+    /* Constants
+    /**********************************************************
+     */
+    
     /**
      * Name used to identify Smile format.
      * (and returned by {@link #getFormatName()}
@@ -85,13 +91,27 @@ public class SmileFactory extends JsonFactory
 
     public SmileFactory(ObjectCodec oc) { super(oc); }
 
+    /**
+     * Note: REQUIRES 2.2.1 -- unfortunate intra-patch dep but seems
+     * preferable to just leaving bug be as is
+     * 
+     * @since 2.2.1
+     */
+    public SmileFactory(SmileFactory src, ObjectCodec oc)
+    {
+        super(src, oc);
+        _cfgDelegateToTextual = src._cfgDelegateToTextual;
+        _smileParserFeatures = src._smileParserFeatures;
+        _smileGeneratorFeatures = src._smileGeneratorFeatures;
+    }
+
     // @since 2.1
     @Override
     public SmileFactory copy()
     {
         _checkInvalidCopy(SmileFactory.class);
         // note: as with base class, must NOT copy mapper reference
-        return new SmileFactory(null);
+        return new SmileFactory(this, null);
     }
     
     public void delegateToTextual(boolean state) {
