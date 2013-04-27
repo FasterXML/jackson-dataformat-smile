@@ -89,7 +89,11 @@ public class SmileFactory extends JsonFactory
      */
     public SmileFactory() { this(null); }
 
-    public SmileFactory(ObjectCodec oc) { super(oc); }
+    public SmileFactory(ObjectCodec oc) {
+        super(oc);
+        _smileParserFeatures = DEFAULT_SMILE_PARSER_FEATURE_FLAGS;
+        _smileGeneratorFeatures = DEFAULT_SMILE_GENERATOR_FEATURE_FLAGS;
+    }
 
     /**
      * Note: REQUIRES 2.2.1 -- unfortunate intra-patch dep but seems
@@ -116,6 +120,22 @@ public class SmileFactory extends JsonFactory
     
     public void delegateToTextual(boolean state) {
         _cfgDelegateToTextual = state;
+    }
+
+    /*
+    /**********************************************************
+    /* Serializable overrides
+    /**********************************************************
+     */
+
+    /**
+     * Method that we need to override to actually make restoration go
+     * through constructors etc.
+     * Also: must be overridden by sub-classes as well.
+     */
+    @Override
+    protected Object readResolve() {
+        return new SmileFactory(this, _objectCodec);
     }
 
     /*                                                                                       
