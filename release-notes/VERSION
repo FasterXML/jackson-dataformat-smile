@@ -1,12 +1,16 @@
 Project: jackson-dataformat-smile
-Version: 2.1.4 (26-Feb-2013)
+Version: 2.1.5 (02-May-2013)
 
-* Added checks in `SmileGenerator.writeBinary(InputStream)` to avoid infinite
-  looping (related to #55 of jackson-core)
+No functional changes.
 
 ------------------------------------------------------------------------
 === History: ===
 ------------------------------------------------------------------------
+
+2.1.4 (26-Feb-2013)
+
+* Added checks in `SmileGenerator.writeBinary(InputStream)` to avoid infinite
+  looping (related to #55 of jackson-core)
 
 2.1.3 (31-Jan-2013)
 2.1.2 (04-Dec-2012)

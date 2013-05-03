@@ -42,7 +42,7 @@ tree model)
   </scm>
 
   <properties>
-    <jackson.core.version>2.1.4</jackson.core.version>
+    <jackson.core.version>2.1.5</jackson.core.version>
     <!--
      | Configuration properties for the OSGi maven-bundle-plugin
     -->
