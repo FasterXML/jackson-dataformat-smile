@@ -67,9 +67,8 @@ public class SmileFactory extends JsonFactory
      */
     protected boolean _cfgDelegateToTextual;
 
-    protected int _smileParserFeatures = DEFAULT_SMILE_PARSER_FEATURE_FLAGS;
-
-    protected int _smileGeneratorFeatures = DEFAULT_SMILE_GENERATOR_FEATURE_FLAGS;
+    protected int _smileParserFeatures;
+    protected int _smileGeneratorFeatures;
 
     /*
     /**********************************************************
