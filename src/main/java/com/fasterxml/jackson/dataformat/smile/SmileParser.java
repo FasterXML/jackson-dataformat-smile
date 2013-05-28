@@ -659,10 +659,10 @@ public class SmileParser
             case 0x04: // long variable length unicode
                 _tokenIncomplete = true;
                 return (_currToken = JsonToken.VALUE_STRING);
-            case 0x08: // binary, 7-bit
+            case 0x08: // binary, 7-bit (0xE8)
                 _tokenIncomplete = true;
                 return (_currToken = JsonToken.VALUE_EMBEDDED_OBJECT);
-            case 0x0C: // long shared string
+            case 0x0C: // long shared string (0xEC)
             case 0x0D:
             case 0x0E:
             case 0x0F:
