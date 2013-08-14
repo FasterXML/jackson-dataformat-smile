@@ -39,4 +39,4 @@ SomeType otherValue = mapper.readValue(smileData, SomeType.class);
 
 ## Related
 
-* [Smile-format discussions group](https://groups.google.com/forum/#!topic/smile-format-discussion)
+* [Smile-format discussion group](https://groups.google.com/forum/#!forum/smile-format-discussion)
