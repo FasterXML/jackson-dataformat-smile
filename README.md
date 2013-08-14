@@ -36,3 +36,7 @@ SomeType value = ...;
 byte[] smileData = mapper.writeValueAsBytes(value);
 SomeType otherValue = mapper.readValue(smileData, SomeType.class);
 ```
+
+## Related
+
+* [Smile-format discussions group](https://groups.google.com/forum/#!topic/smile-format-discussion)
