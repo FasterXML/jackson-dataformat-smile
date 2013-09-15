@@ -147,10 +147,10 @@ public class SmileFactory extends JsonFactory
     public Version version() {
         return PackageVersion.VERSION;
     }
-    
+
     /*
     /**********************************************************
-    /* Format detection functionality (since 1.8)
+    /* Format detection functionality
     /**********************************************************
      */
     
@@ -161,7 +161,7 @@ public class SmileFactory extends JsonFactory
 
     // Defaults work fine for this:
     // public boolean canUseSchema(FormatSchema schema) { }
-
+    
     /**
      * Sub-classes need to override this method (as of 1.8)
      */
@@ -169,7 +169,18 @@ public class SmileFactory extends JsonFactory
     public MatchStrength hasFormat(InputAccessor acc) throws IOException {
         return SmileParserBootstrapper.hasSmileFormat(acc);
     }
+
+    /*
+    /**********************************************************
+    /* Capability introspection
+    /**********************************************************
+     */
     
+    @Override
+    public boolean canHandleBinaryNatively() {
+        return true;
+    }
+
     /*
     /**********************************************************
     /* Configuration, parser settings
@@ -268,6 +279,7 @@ public class SmileFactory extends JsonFactory
     /**********************************************************
      */
 
+    @SuppressWarnings("resource")
     @Override
     public SmileParser createParser(File f)
         throws IOException, JsonParseException
@@ -316,6 +328,7 @@ public class SmileFactory extends JsonFactory
      * @deprecated Since 2.1 Use {@link #createParser(File)} instead
      * @since 2.1
      */
+    @SuppressWarnings("resource")
     @Deprecated
     @Override
     public SmileParser createJsonParser(File f)

@@ -403,7 +403,18 @@ public class SmileGenerator
     public Version version() {
         return PackageVersion.VERSION;
     }
-    
+
+    /*
+    /**********************************************************
+    /* Capability introspection
+    /**********************************************************
+     */
+
+    @Override
+    public boolean canWriteBinaryNatively() {
+        return true;
+    }
+
     /*
     /**********************************************************
     /* Overridden methods, configuration

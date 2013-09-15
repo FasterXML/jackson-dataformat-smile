@@ -1,9 +1,11 @@
 package com.fasterxml.jackson.dataformat.smile;
 
 import java.io.IOException;
+import java.util.UUID;
 
 import org.junit.Assert;
 
+import com.fasterxml.jackson.core.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class TestMapper extends SmileTestBase
@@ -14,14 +16,21 @@ public class TestMapper extends SmileTestBase
         public BytesBean() { }
         public BytesBean(byte[] b) { bytes = b; }
     }
+
+    /*
+    /**********************************************************
+    /* Test methods
+    /**********************************************************
+     */
+    
+    private final ObjectMapper MAPPER = smileMapper();
     
     // [JACKSON-733]
     public void testBinary() throws IOException
     {
         byte[] input = new byte[] { 1, 2, 3, -1, 8, 0, 42 };
-        ObjectMapper mapper = smileMapper();
-        byte[] smile = mapper.writeValueAsBytes(new BytesBean(input));
-        BytesBean result = mapper.readValue(smile, BytesBean.class);
+        byte[] smile = MAPPER.writeValueAsBytes(new BytesBean(input));
+        BytesBean result = MAPPER.readValue(smile, BytesBean.class);
         
         assertNotNull(result.bytes);
         Assert.assertArrayEquals(input, result.bytes);
@@ -36,6 +45,25 @@ public class TestMapper extends SmileTestBase
         assertNotSame(mapper1, mapper2);
         assertNotSame(mapper1.getFactory(), mapper2.getFactory());
         assertEquals(SmileFactory.class, mapper2.getFactory().getClass());
+    }
+
+    // UUIDs should be written as binary (starting with 2.3)
+    public void testUUIDs() throws IOException
+    {
+        UUID uuid = UUID.randomUUID();
+        byte[] bytes = MAPPER.writeValueAsBytes(uuid);
+
+        // first, just verify we can decode it
+        UUID out = MAPPER.readValue(bytes, UUID.class);
+        assertEquals(uuid, out);
+
+        // then verify it comes back as binary
+        JsonParser p = MAPPER.getFactory().createParser(bytes);
+        assertEquals(JsonToken.VALUE_EMBEDDED_OBJECT, p.nextToken());
+        byte[] b = p.getBinaryValue();
+        assertNotNull(b);
+        assertEquals(16, b.length);
+        p.close();
     }
 }
 
