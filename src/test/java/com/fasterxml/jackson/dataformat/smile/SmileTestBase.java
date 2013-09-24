@@ -105,7 +105,7 @@ abstract class SmileTestBase
     
     protected byte[] _smileDoc(String json) throws IOException
     {
-    	return _smileDoc(json, true);
+        return _smileDoc(json, true);
     }
 
     protected byte[] _smileDoc(String json, boolean writeHeader) throws IOException
