@@ -1,12 +1,14 @@
 Project: jackson-dataformat-smile
-Version: 2.3.0 (14-Nov-2013)
-
-#12: Add LICENSE, NOTICE in artifacts
-- Ensure that UUIDs get encoded using raw binary, when using Smile
+Version: 2.3.1 (xx-Dec-2013)
 
 ------------------------------------------------------------------------
 === History: ===
 ------------------------------------------------------------------------
+
+2.3.0 (14-Nov-2013)
+
+#12: Add LICENSE, NOTICE in artifacts
+- Ensure that UUIDs get encoded using raw binary, when using Smile
 
 2.2.2 (27-May-2013)
 
