@@ -5,7 +5,7 @@
   <parent>
     <groupId>com.fasterxml</groupId>
     <artifactId>oss-parent</artifactId>
-    <version>11</version>
+    <version>12</version>
   </parent>
 
   <groupId>com.fasterxml.jackson.dataformat</groupId>
@@ -27,7 +27,7 @@ tree model)
   </scm>
 
   <properties>
-    <jackson.core.version>2.3.0</jackson.core.version>
+    <jackson.version.core>2.3.1</jackson.version.core>
     <!-- Generate PackageVersion.java into this directory. -->
     <packageVersion.dir>com/fasterxml/jackson/dataformat/smile</packageVersion.dir>
     <packageVersion.package>${project.groupId}.smile</packageVersion.package>
@@ -51,7 +51,7 @@ tree model)
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-core</artifactId>
-      <version>${jackson.core.version}</version>
+      <version>${jackson.version.core}</version>
     </dependency>
 
     <!-- and for testing, JUnit is needed, as well as databind -->
@@ -65,7 +65,7 @@ tree model)
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>
-      <version>${jackson.core.version}</version>
+      <version>${jackson.version.core}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
