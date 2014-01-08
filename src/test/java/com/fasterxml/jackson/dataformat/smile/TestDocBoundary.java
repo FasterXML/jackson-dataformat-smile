@@ -63,6 +63,7 @@ public class TestDocBoundary
             assertToken(JsonToken.VALUE_NUMBER_INT, jp.nextToken());
             assertEquals(3, jp.getIntValue());
             assertNull(jp.nextToken());
+            jp.close();
             jg.close();
         }
     }
@@ -105,5 +106,6 @@ public class TestDocBoundary
         assertNull(jp.nextToken());        
         // and no more:
         assertNull(jp.nextToken());
+        jp.close();
     }
 }

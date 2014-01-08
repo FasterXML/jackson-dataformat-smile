@@ -48,6 +48,7 @@ public class TestGeneratorWithRawUtf8 extends SmileTestBase
             assertArrayEquals(inputBytes, outputBytes);
         }
         assertToken(JsonToken.END_ARRAY, jp.nextToken());
+        jp.close();
     }
 
     /**
@@ -80,6 +81,7 @@ public class TestGeneratorWithRawUtf8 extends SmileTestBase
             assertArrayEquals(inputBytes, outputBytes);
         }
         assertToken(JsonToken.END_ARRAY, jp.nextToken());
+        jp.close();
     }
 
     /**

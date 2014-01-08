@@ -728,10 +728,12 @@ public class NonBlockingParserImpl
     /**********************************************************************
      */
 
+    @Override
     public final boolean needMoreInput() {
         return (_inputPtr >=_inputEnd) && !_endOfInput;
     }
 
+    @Override
     public void feedInput(byte[] buf, int start, int len)
         throws IOException
     {
@@ -754,6 +756,7 @@ public class NonBlockingParserImpl
         _origBufferLen = len;
     }
 
+    @Override
     public void endOfInput() {
         _endOfInput = true;
     }
@@ -764,6 +767,7 @@ public class NonBlockingParserImpl
     /**********************************************************************
      */
 
+    @Override
     public JsonToken peekNextToken() throws IOException, JsonParseException
     {
         if (!_tokenIncomplete) {

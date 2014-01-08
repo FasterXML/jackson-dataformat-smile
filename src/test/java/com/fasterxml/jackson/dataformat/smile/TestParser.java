@@ -34,6 +34,7 @@ public class TestParser
         assertToken(JsonToken.END_ARRAY, p.nextToken());
         assertNull(p.getCurrentName());
         assertNull(p.nextToken());
+        p.close();
     }
 
     public void testSimple() throws IOException
@@ -129,6 +130,7 @@ public class TestParser
     	assertToken(JsonToken.VALUE_STRING, p.nextToken());
     	assertEquals(LONG, p.getText());
     	assertNull(p.nextToken());
+     p.close();
     }
 
     //Test for non-ASCII String values longer than 64 bytes; separate
@@ -146,6 +148,7 @@ public class TestParser
     	assertToken(JsonToken.VALUE_STRING, p.nextToken());
     	assertEquals(LONG, p.getText());
     	assertNull(p.nextToken());
+     p.close();
     }
     
     public void testTrivialObject() throws IOException
@@ -161,6 +164,7 @@ public class TestParser
     	assertToken(JsonToken.VALUE_NUMBER_INT, p.nextToken());
     	assertEquals(13, p.getIntValue());    	
     	assertToken(JsonToken.END_OBJECT, p.nextToken());
+     p.close();
     }
     
     public void testSimpleObject() throws IOException
@@ -220,6 +224,7 @@ public class TestParser
         assertToken(JsonToken.END_OBJECT, p.nextToken());
         assertToken(JsonToken.END_ARRAY, p.nextToken());
         assertNull(p.nextToken());
+        p.close();
     }
     
     public void testJsonSampleDoc() throws IOException
@@ -317,6 +322,7 @@ public class TestParser
         } catch (IOException e) {
             verifyException(e, "Invalid token byte 0x00");
         }
+        p.close();
     }
 
     // [JACKSON-629]

@@ -44,6 +44,7 @@ public class TestGeneratorBufferRecycle extends SmileTestBase
         while (parser.nextToken() != null) {
 
         }
+        parser.close();
     }
 
     private static Map<?,?> buildMap(String prefix, int size) {

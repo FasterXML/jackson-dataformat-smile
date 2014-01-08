@@ -57,6 +57,7 @@ public class TestGeneratorBinary extends SmileTestBase
         } catch (UnsupportedOperationException e) {
             verifyException(e, "must pass actual length");
         }
+        jg.close();
     }
     
     /*
@@ -92,6 +93,8 @@ public class TestGeneratorBinary extends SmileTestBase
             byte[] b = jp.getBinaryValue();
             Assert.assertArrayEquals(INPUT, b);
             assertToken(JsonToken.END_ARRAY, jp.nextToken());
+            jp.close();
+            data.close();
         }
     }
 }

@@ -22,6 +22,6 @@ public class TestParserUnicode extends SmileTestBase
         assertToken(JsonToken.VALUE_STRING, p.nextToken());
         assertEquals(TEXT, p.getText());
         assertNull(p.nextToken());
+        p.close();
     }
-
 }

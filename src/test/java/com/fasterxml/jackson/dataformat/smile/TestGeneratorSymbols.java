@@ -77,6 +77,7 @@ public class TestGeneratorSymbols extends SmileTestBase
             assertToken(JsonToken.END_OBJECT, parser.nextToken());
     
             assertToken(JsonToken.END_ARRAY, parser.nextToken());
+            parser.close();
         }
     }
 
@@ -228,6 +229,7 @@ public class TestGeneratorSymbols extends SmileTestBase
         assertEquals(VALUE, parser.getText());
         assertToken(JsonToken.END_OBJECT, parser.nextToken());
         assertToken(JsonToken.END_OBJECT, parser.nextToken());
+        parser.close();
     }
 
     private String _dataToString(byte[] data){

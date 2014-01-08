@@ -3,20 +3,15 @@ package com.fasterxml.jackson.dataformat.smile;
 import java.io.*;
 
 import com.fasterxml.jackson.core.*;
-
 import com.fasterxml.jackson.dataformat.smile.SmileFactory;
 
 /**
  * Simple command-line utility that can be used to encode JSON as Smile, or
  * decode JSON from Smile: direction is indicated by single command-line
  * option of either "-e" (encode) or "-d" (decode).
- * 
- * @author tatu
  */
 public class Tool
 {
-    public final static String SUFFIX = ".lzf";
-
     public final JsonFactory jsonFactory;
     public final SmileFactory smileFactory;
     
@@ -106,6 +101,7 @@ public class Tool
         jg.close();
     }
 
+    @SuppressWarnings("resource")
     private void verify(InputStream in, InputStream in2) throws IOException
     {
         JsonParser jp = jsonFactory.createParser(in);

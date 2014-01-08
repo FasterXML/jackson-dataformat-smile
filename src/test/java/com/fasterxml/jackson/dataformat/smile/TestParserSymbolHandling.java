@@ -176,6 +176,7 @@ public class TestParserSymbolHandling
             
         }
         assertToken(JsonToken.END_ARRAY, jp.nextToken());
+        jp.close();
     }
 
     public void testSharedStrings() throws IOException
@@ -216,6 +217,7 @@ public class TestParserSymbolHandling
             assertEquals(value, jp.getText());
         }
         assertToken(JsonToken.END_ARRAY, jp.nextToken());
+        jp.close();
     }
 
     public void testSharedStringsInObject() throws IOException
@@ -243,6 +245,7 @@ public class TestParserSymbolHandling
             assertEquals(SHARED_SYMBOLS[i], jp.getText());
         }
         assertToken(JsonToken.END_OBJECT, jp.nextToken());
+        jp.close();
     }
 
     public void testSharedStringsMixed() throws IOException
@@ -363,6 +366,7 @@ public class TestParserSymbolHandling
         assertToken(JsonToken.END_ARRAY, jp.nextToken()); // images
         
         assertToken(JsonToken.END_OBJECT, jp.nextToken());
+        jp.close();
     }
 
     public void testDataBindingAndShared() throws IOException
@@ -429,6 +433,7 @@ public class TestParserSymbolHandling
         assertEquals("start", parser.getText());
 
         assertToken(JsonToken.END_OBJECT, parser.nextToken());
+        parser.close();
     }
 
     /**
@@ -549,6 +554,7 @@ public class TestParserSymbolHandling
             assertEquals(str, jp.getText());
         }
         assertToken(JsonToken.END_ARRAY, jp.nextToken());
+        jp.close();
     }
 
     private String generateString(int rawNr)
