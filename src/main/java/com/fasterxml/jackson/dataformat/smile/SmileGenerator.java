@@ -529,7 +529,10 @@ public class SmileGenerator
      */
     public void writeRaw(byte b) throws IOException, JsonGenerationException
     {
-        _writeByte(TOKEN_LITERAL_START_ARRAY);
+        /* 08-Jan-2014, tatu: Should we just rather throw an exception? For now,
+         *   allow... maybe have a feature to cause an exception.
+         */
+        _writeByte(b);
     }
 
     /**
