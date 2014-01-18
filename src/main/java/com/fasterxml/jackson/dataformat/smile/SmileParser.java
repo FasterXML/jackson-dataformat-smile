@@ -398,15 +398,13 @@ public class SmileParser
     /**
      * Helper method that will try to load at least specified number bytes in
      * input buffer, possible moving existing data around if necessary
-     * 
-     * @since 1.6
      */
-    protected final boolean _loadToHaveAtLeast(int minAvailable)
+    protected final void _loadToHaveAtLeast(int minAvailable)
         throws IOException
     {
         // No input stream, no leading (either we are closed, or have non-stream input source)
         if (_inputStream == null) {
-            return false;
+            throw _constructError("Needed to read "+minAvailable+" bytes, reached end-of-input");
         }
         // Need to move remaining data in front?
         int amount = _inputEnd - _inputPtr;
@@ -428,11 +426,10 @@ public class SmileParser
                 if (count == 0) {
                     throw new IOException("InputStream.read() returned 0 characters when trying to read "+amount+" bytes");
                 }
-                return false;
+                throw _constructError("Needed to read "+minAvailable+" bytes, missed "+minAvailable+" before end-of-input");
             }
             _inputEnd += count;
         }
-        return true;
     }
     
     @Override
@@ -1387,26 +1384,26 @@ public class SmileParser
             }
             return JsonToken.FIELD_NAME;
         case 2: // short ASCII
-	    {
-	        int len = 1 + (ch & 0x3f);
-        	String name;
-        	Name n = _findDecodedFromSymbols(len);
-        	if (n != null) {
-        	    name = n.getName();
-        	    _inputPtr += len;
-        	} else {
-        	    name = _decodeShortAsciiName(len);
-        	    name = _addDecodedToSymbols(len, name);
-        	}
+            {
+                int len = 1 + (ch & 0x3f);
+                String name;
+                Name n = _findDecodedFromSymbols(len);
+                if (n != null) {
+                    name = n.getName();
+                    _inputPtr += len;
+                } else {
+                    name = _decodeShortAsciiName(len);
+                    name = _addDecodedToSymbols(len, name);
+                }
                 if (_seenNames != null) {
-                   if (_seenNameCount >= _seenNames.length) {
-   	               _seenNames = _expandSeenNames(_seenNames);
-                   }
-                   _seenNames[_seenNameCount++] = name;
+                    if (_seenNameCount >= _seenNames.length) {
+                        _seenNames = _expandSeenNames(_seenNames);
+                    }
+                    _seenNames[_seenNameCount++] = name;
                 }
                 _parsingContext.setCurrentName(name);
-	    }
-	    return JsonToken.FIELD_NAME;                
+            }
+            return JsonToken.FIELD_NAME;                
         case 3: // short Unicode
             // all valid, except for 0xFF
             ch &= 0x3F;
@@ -1477,15 +1474,14 @@ public class SmileParser
         if (len < 5) {
             return _symbols.addName(name, _quad1, 0).getName();
         }
-	if (len < 9) {
-    	    return _symbols.addName(name, _quad1, _quad2).getName();
-	}
-	int qlen = (len + 3) >> 2;
-	return _symbols.addName(name, _quadBuffer, qlen).getName();
+        if (len < 9) {
+            return _symbols.addName(name, _quad1, _quad2).getName();
+        }
+        int qlen = (len + 3) >> 2;
+        return _symbols.addName(name, _quadBuffer, qlen).getName();
     }
 
-    private final String _decodeShortAsciiName(int len)
-        throws IOException, JsonParseException
+    private final String _decodeShortAsciiName(int len) throws IOException
     {
         // note: caller ensures we have enough bytes available
         char[] outBuf = _textBuffer.emptyAndGetCurrentSegment();
@@ -1522,7 +1518,7 @@ public class SmileParser
      * @param len Length between 1 and 64
      */
     private final String _decodeShortUnicodeName(int len)
-        throws IOException, JsonParseException
+        throws IOException
     {
         // note: caller ensures we have enough bytes available
         int outPtr = 0;
@@ -1745,13 +1741,13 @@ public class SmileParser
         }
         _parsingContext.setCurrentName(name);
     }
-    
+
     /**
      * Helper method for trying to find specified encoded UTF-8 byte sequence
      * from symbol table; if successful avoids actual decoding to String
      */
     private final Name _findDecodedFromSymbols(int len)
-    	throws IOException, JsonParseException
+        throws IOException, JsonParseException
     {
         if ((_inputEnd - _inputPtr) < len) {
             _loadToHaveAtLeast(len);
@@ -1841,10 +1837,9 @@ public class SmileParser
         return _symbols.findName(_quadBuffer, offset);
     }
     
-    private static int[] _growArrayTo(int[] arr, int minSize)
-    {
-    	int[] newArray = new int[minSize + 4];
-    	if (arr != null) {
+    private static int[] _growArrayTo(int[] arr, int minSize) {
+        int[] newArray = new int[minSize + 4];
+        if (arr != null) {
             // !!! TODO: JDK 1.6, Arrays.copyOf
             System.arraycopy(arr, 0, newArray, 0, arr.length);
         }
@@ -2175,10 +2170,10 @@ public class SmileParser
             _loadToHaveAtLeast(len);
         }
         // Note: we count on fact that buffer must have at least 'len' (<= 64) empty char slots
-	final char[] outBuf = _textBuffer.emptyAndGetCurrentSegment();
+        final char[] outBuf = _textBuffer.emptyAndGetCurrentSegment();
         int outPtr = 0;
         final byte[] inBuf = _inputBuffer;
-	int inPtr = _inputPtr;
+        int inPtr = _inputPtr;
 	
         // loop unrolling SHOULD be faster (as with _decodeShortAsciiName), but somehow
 	// is NOT; as per testing, benchmarking... very weird.
