@@ -116,16 +116,16 @@ abstract class SmileTestBase
     protected byte[] _smileDoc(SmileFactory smileFactory, String json, boolean writeHeader) throws IOException
     {
         JsonFactory jf = new JsonFactory();
-    	JsonParser jp = jf.createParser(json);
-    	ByteArrayOutputStream out = new ByteArrayOutputStream();
-    	JsonGenerator jg = smileGenerator(out, writeHeader);
+        JsonParser jp = jf.createParser(json);
+    	    ByteArrayOutputStream out = new ByteArrayOutputStream();
+    	    JsonGenerator jg = smileGenerator(out, writeHeader);
     	
-    	while (jp.nextToken() != null) {
-    	    jg.copyCurrentEvent(jp);
-    	}
-    	jp.close();
-    	jg.close();
-    	return out.toByteArray();
+    	    while (jp.nextToken() != null) {
+    	        jg.copyCurrentEvent(jp);
+    	    }
+    	    jp.close();
+    	    jg.close();
+    	    return out.toByteArray();
     }
 
     protected SmileGenerator smileGenerator(ByteArrayOutputStream result, boolean addHeader)
