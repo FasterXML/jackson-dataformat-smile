@@ -1350,13 +1350,13 @@ public class SmileParser extends ParserBase
                 {
                     if (_inputPtr >= _inputEnd) {
                         loadMoreGuaranteed();
-	            }
-	            int index = ((ch & 0x3) << 8) + (_inputBuffer[_inputPtr++] & 0xFF);
+                    }
+                    int index = ((ch & 0x3) << 8) + (_inputBuffer[_inputPtr++] & 0xFF);
                     if (index >= _seenNameCount) {
                         _reportInvalidSharedName(index);
                     }
-	            _parsingContext.setCurrentName(_seenNames[index]);
-	        }
+                    _parsingContext.setCurrentName(_seenNames[index]);
+                }
                 return JsonToken.FIELD_NAME;
             case 0x34: // long ASCII/Unicode name
                 _handleLongFieldName();
