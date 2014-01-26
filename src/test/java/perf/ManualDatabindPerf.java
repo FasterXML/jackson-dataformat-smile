@@ -12,33 +12,13 @@ public class ManualDatabindPerf
             T1 inputValue, Class<T1> inputClass)
         throws Exception
     {
-        final byte[] output = mapper1.writeValueAsBytes(inputValue);
+        final byte[] output1 = mapper1.writeValueAsBytes(inputValue);
+        final byte[] output2 = mapper2.writeValueAsBytes(inputValue);
 
-        final int REPS;
-        // sanity check, verify identical output
-        {
-            final byte[] output2 = mapper2.writeValueAsBytes(inputValue);
-
-            int ix = 0;
-            int end = Math.min(output.length, output2.length);
-            
-            for (; ix < end; ++ix) {
-                if (output[ix] != output2[ix]) {
-                    break;
-                }
-            }
-
-            if (ix != output.length) {
-                System.err.printf("FAIL: input 1 and 2 differ at byte #%d (lengths: %d / %d)\n",
-                        ix, output.length, output2.length);
-                System.exit(1);
-            }
-            
-            // Let's try to guestimate suitable size, N megs of output
-            REPS = (int) ((double) (9 * 1000 * 1000) / (double) output.length);
-            System.out.printf("Read %d bytes to bind, will do %d repetitions\n",
-                    output.length, REPS);
-        }
+        // Let's try to guestimate suitable size, N megs of output
+        final int REPS = (int) ((double) (9 * 1000 * 1000) / (double) output1.length);
+        System.out.printf("Read %d/%d bytes to bind, will do %d repetitions\n",
+                output1.length, output2.length, REPS);
 
         final ObjectReader reader1 = mapper1.reader(inputClass);
         final ObjectReader reader2 = mapper2.reader(inputClass);
@@ -63,20 +43,23 @@ public class ManualDatabindPerf
             String msg;
             boolean lf = (round == 0);
 
-round = 1;
+//round = 1;
 
             long msecs;
             ObjectReader reader = null;
             ObjectWriter writer = null;
+            byte[] src = null;
             
             switch (round) {
             case 0:
                 msg = "Read, JSON";
                 reader = reader1;
+                src = output1;
                 break;
             case 1:
                 msg = "Read, Smile";
                 reader = reader2;
+                src = output2;
                 break;
             case 2:
                 msg = "Write, JSON";
@@ -91,7 +74,7 @@ round = 1;
             }
             
             if (reader != null) {
-                msecs = testRead(REPS, output, reader);
+                msecs = testRead(REPS, src, reader);
             } else {
                 msecs = testWrite(REPS, inputValue, writer, out);
             }
@@ -106,7 +89,7 @@ round = 1;
                 ++roundsDone;
                 if ((roundsDone % 3) == 0 && roundsDone > WARMUP_ROUNDS) {
                     double den = (double) (roundsDone - WARMUP_ROUNDS);
-                    System.out.printf("Averages after %d rounds (vanilla/AB-read, vanilla/AB-write): "
+                    System.out.printf("Averages after %d rounds (json/smile-read, json/smile-write): "
                             +"%.1f/%.1f (%.1f%%), %.1f/%.1f (%.1f%%) msecs\n",
                             (int) den
                             ,times[0] / den, times[1] / den, 100.0 * times[1] / times[0]
