@@ -1745,28 +1745,27 @@ public class SmileParser extends ParserBase
      * Helper method for trying to find specified encoded UTF-8 byte sequence
      * from symbol table; if successful avoids actual decoding to String
      */
-    private final Name _findDecodedFromSymbols(int len)
-        throws IOException
+    private final Name _findDecodedFromSymbols(int len) throws IOException
     {
         if ((_inputEnd - _inputPtr) < len) {
             _loadToHaveAtLeast(len);
         }
         // First: maybe we already have this name decoded?
         if (len < 5) {
-	    int inPtr = _inputPtr;
-	    final byte[] inBuf = _inputBuffer;
-	    int q = inBuf[inPtr] & 0xFF;
-	    if (--len > 0) {
-	        q = (q << 8) + (inBuf[++inPtr] & 0xFF);
-	        if (--len > 0) {
-	            q = (q << 8) + (inBuf[++inPtr] & 0xFF);
-	            if (--len > 0) {
-	                q = (q << 8) + (inBuf[++inPtr] & 0xFF);
-	            }
-	        }
-	    }
-	    _quad1 = q;
-	    return _symbols.findName(q);
+            int inPtr = _inputPtr;
+            final byte[] inBuf = _inputBuffer;
+            int q = inBuf[inPtr] & 0xFF;
+            if (--len > 0) {
+                q = (q << 8) + (inBuf[++inPtr] & 0xFF);
+                if (--len > 0) {
+                    q = (q << 8) + (inBuf[++inPtr] & 0xFF);
+                    if (--len > 0) {
+                        q = (q << 8) + (inBuf[++inPtr] & 0xFF);
+                    }
+                }
+            }
+            _quad1 = q;
+            return _symbols.findName(q);
         }
         if (len < 9) {
             int inPtr = _inputPtr;
@@ -1799,20 +1798,19 @@ public class SmileParser extends ParserBase
     /**
      * Method for locating names longer than 8 bytes (in UTF-8)
      */
-    private final Name _findDecodedMedium(int len)
-        throws IOException
+    private final Name _findDecodedMedium(int len) throws IOException
     {
-    	// first, need enough buffer to store bytes as ints:
+        // first, need enough buffer to store bytes as ints:
         {
             int bufLen = (len + 3) >> 2;
             if (bufLen > _quadBuffer.length) {
                 _quadBuffer = _growArrayTo(_quadBuffer, bufLen);
             }
-    	}
-    	// then decode, full quads first
-    	int offset = 0;
-    	int inPtr = _inputPtr;
-    	final byte[] inBuf = _inputBuffer;
+        }
+        // then decode, full quads first
+        int offset = 0;
+        int inPtr = _inputPtr;
+        final byte[] inBuf = _inputBuffer;
         do {
             int q = (inBuf[inPtr++] & 0xFF) << 8;
             q |= inBuf[inPtr++] & 0xFF;
@@ -1852,26 +1850,24 @@ public class SmileParser extends ParserBase
      */
 
     @Override
-    protected void _parseNumericValue(int expType)
-    	throws IOException
+    protected void _parseNumericValue(int expType) throws IOException
     {
-    	if (_tokenIncomplete) {
-    	    int tb = _typeByte;
-    	    // ensure we got a numeric type with value that is lazily parsed
+        if (_tokenIncomplete) {
+            int tb = _typeByte;
+    	        // ensure we got a numeric type with value that is lazily parsed
             if (((tb >> 5) & 0x7) != 1) {
                 _reportError("Current token ("+_currToken+") not numeric, can not use numeric value accessors");
             }
             _tokenIncomplete = false;
             _finishNumberToken(tb);
-    	}
+        }
     }
     
     /**
      * Method called to finish parsing of a token so that token contents
      * are retriable
      */
-    protected void _finishToken()
-    	throws IOException
+    protected void _finishToken() throws IOException
     {
         _tokenIncomplete = false;
         int tb = _typeByte;
@@ -1912,8 +1908,7 @@ public class SmileParser extends ParserBase
     	_throwInternal();
     }
 
-    protected final void _finishNumberToken(int tb)
-        throws IOException
+    protected final void _finishNumberToken(int tb) throws IOException
     {
         tb &= 0x1F;
         int type = (tb >> 2);
@@ -1954,25 +1949,19 @@ public class SmileParser extends ParserBase
     
     private final void _finishInt() throws IOException
     {
-    	if (_inputPtr >= _inputEnd) {
-    	    loadMoreGuaranteed();
-    	}
-    	int value = _inputBuffer[_inputPtr++];
-    	int i;
-    	if (value < 0) { // 6 bits
-    		value &= 0x3F;
-    	} else {
-    	    if (_inputPtr >= _inputEnd) {
-    	        loadMoreGuaranteed();
-    	    }
-    	    i = _inputBuffer[_inputPtr++];
-    	    if (i >= 0) { // 13 bits
-    	        value = (value << 7) + i;
+        if (_inputPtr >= _inputEnd) {
+            loadMoreGuaranteed();
+        }
+        int value = _inputBuffer[_inputPtr++];
+        int i;
+    	    if (value < 0) { // 6 bits
+    	        value &= 0x3F;
+    	    } else {
     	        if (_inputPtr >= _inputEnd) {
     	            loadMoreGuaranteed();
     	        }
     	        i = _inputBuffer[_inputPtr++];
-    	        if (i >= 0) {
+    	        if (i >= 0) { // 13 bits
     	            value = (value << 7) + i;
     	            if (_inputPtr >= _inputEnd) {
     	                loadMoreGuaranteed();
@@ -1980,42 +1969,47 @@ public class SmileParser extends ParserBase
     	            i = _inputBuffer[_inputPtr++];
     	            if (i >= 0) {
     	                value = (value << 7) + i;
-    	                // and then we must get negative
     	                if (_inputPtr >= _inputEnd) {
     	                    loadMoreGuaranteed();
     	                }
     	                i = _inputBuffer[_inputPtr++];
     	                if (i >= 0) {
-    	                    _reportError("Corrupt input; 32-bit VInt extends beyond 5 data bytes");
+    	                    value = (value << 7) + i;
+    	                    // and then we must get negative
+    	                    if (_inputPtr >= _inputEnd) {
+    	                        loadMoreGuaranteed();
+    	                    }
+    	                    i = _inputBuffer[_inputPtr++];
+    	                    if (i >= 0) {
+    	                        _reportError("Corrupt input; 32-bit VInt extends beyond 5 data bytes");
+    	                    }
     	                }
     	            }
     	        }
+    	        value = (value << 6) + (i & 0x3F);
     	    }
-    	    value = (value << 6) + (i & 0x3F);
-    	}
         _numberInt = SmileUtil.zigzagDecode(value);
-    	_numTypesValid = NR_INT;
+        _numTypesValid = NR_INT;
     }
 
-    private final void  _finishLong()
-        throws IOException
+    private final void  _finishLong() throws IOException
     {
-	// Ok, first, will always get 4 full data bytes first; 1 was already passed
-	long l = (long) _fourBytesToInt();
-    	// and loop for the rest
-    	while (true) {
-    	    if (_inputPtr >= _inputEnd) {
-    	        loadMoreGuaranteed();
+        // Ok, first, will always get 4 full data bytes first; 1 was already passed
+        long l = (long) _fourBytesToInt();
+        // and loop for the rest
+        while (true) {
+            if (_inputPtr >= _inputEnd) {
+                loadMoreGuaranteed();
+            }
+            int value = _inputBuffer[_inputPtr++];
+    	        if (value < 0) {
+    	            l = (l << 6) + (value & 0x3F);
+    	            _numberLong = SmileUtil.zigzagDecode(l);
+    	            _numTypesValid = NR_LONG;
+    	            return;
+    	        }
+    	        l = (l << 7) + value;
     	    }
-    	    int value = _inputBuffer[_inputPtr++];
-    	    if (value < 0) {
-    	        l = (l << 6) + (value & 0x3F);
-    	        _numberLong = SmileUtil.zigzagDecode(l);
-    	        _numTypesValid = NR_LONG;
-    	        return;
-    	    }
-    	    l = (l << 7) + value;
-    	}
     }
 
     private final void _finishBigInteger() throws IOException
