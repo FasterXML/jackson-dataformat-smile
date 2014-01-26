@@ -1478,8 +1478,12 @@ public class SmileParser extends ParserBase
         int outPtr = 0;
         final byte[] inBuf = _inputBuffer;
         int inPtr = _inputPtr;
-        
+
+        /* 25-Jan-2014, tsaloranta: Micro-benchmarks suggest that unrolling
+         *   does NOT speed up things on JDK 7, let's not do it.
+         */
         // loop unrolling seems to help here:
+        /*
         for (int inEnd = inPtr + len - 3; inPtr < inEnd; ) {
             outBuf[outPtr++] = (char) inBuf[inPtr++];            
             outBuf[outPtr++] = (char) inBuf[inPtr++];            
@@ -1495,7 +1499,12 @@ public class SmileParser extends ParserBase
                     outBuf[outPtr++] = (char) inBuf[inPtr++];
                 }
             }
-        } 
+        }
+        */
+        for (int inEnd = inPtr + len; inPtr < inEnd; ++inPtr) {
+            outBuf[outPtr++] = (char) inBuf[inPtr];
+        }
+        
         _inputPtr = inPtr;
         _textBuffer.setCurrentLength(len);
         return _textBuffer.contentsAsString();
@@ -2009,26 +2018,24 @@ public class SmileParser extends ParserBase
     	}
     }
 
-    private final void _finishBigInteger()
-        throws IOException
+    private final void _finishBigInteger() throws IOException
     {
         byte[] raw = _read7BitBinaryWithLength();
         _numberBigInt = new BigInteger(raw);
         _numTypesValid = NR_BIGINT;
     }
 
-    private final void _finishFloat()
-        throws IOException
+    private final void _finishFloat() throws IOException
     {
         // just need 5 bytes to get int32 first; all are unsigned
-    	int i = _fourBytesToInt();
-    	if (_inputPtr >= _inputEnd) {
-    		loadMoreGuaranteed();
-    	}
-    	i = (i << 7) + _inputBuffer[_inputPtr++];
-    	float f = Float.intBitsToFloat(i);
-	_numberDouble = (double) f;
-	_numTypesValid = NR_DOUBLE;
+        int i = _fourBytesToInt();
+    	    if (_inputPtr >= _inputEnd) {
+    	        loadMoreGuaranteed();
+    	    }
+    	    i = (i << 7) + _inputBuffer[_inputPtr++];
+    	    float f = Float.intBitsToFloat(i);
+    	    _numberDouble = (double) f;
+    	    _numTypesValid = NR_DOUBLE;
     }
 
     private final void _finishDouble()
@@ -2163,29 +2170,8 @@ public class SmileParser extends ParserBase
         int outPtr = 0;
         final byte[] inBuf = _inputBuffer;
         int inPtr = _inputPtr;
-	
-        // loop unrolling SHOULD be faster (as with _decodeShortAsciiName), but somehow
-	// is NOT; as per testing, benchmarking... very weird.
-	/*
-        for (int inEnd = inPtr + len - 3; inPtr < inEnd; ) {
-            outBuf[outPtr++] = (char) inBuf[inPtr++];            
-            outBuf[outPtr++] = (char) inBuf[inPtr++];            
-            outBuf[outPtr++] = (char) inBuf[inPtr++];            
-            outBuf[outPtr++] = (char) inBuf[inPtr++];            
-        }
-        int left = (len & 3);
-        if (left > 0) {
-            outBuf[outPtr++] = (char) inBuf[inPtr++];
-            if (left > 1) {
-                outBuf[outPtr++] = (char) inBuf[inPtr++];
-                if (left > 2) {
-                    outBuf[outPtr++] = (char) inBuf[inPtr++];
-                }
-            }
-        }
-        */
-
-        // meaning: regular tight loop is no slower, typically faster here:
+        
+        // as with _decodeShortAsciiName, no unrolling
         for (final int end = inPtr + len; inPtr < end; ++inPtr) {
             outBuf[outPtr++] = (char) inBuf[inPtr];            
         }
