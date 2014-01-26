@@ -16,7 +16,7 @@ public class ManualDatabindPerf
         final byte[] output2 = mapper2.writeValueAsBytes(inputValue);
 
         // Let's try to guestimate suitable size, N megs of output
-        final int REPS = (int) ((double) (9 * 1000 * 1000) / (double) output1.length);
+        final int REPS = (int) ((double) (15 * 1000 * 1000) / (double) output1.length);
         System.out.printf("Read %d/%d bytes to bind, will do %d repetitions\n",
                 output1.length, output2.length, REPS);
 
@@ -137,6 +137,7 @@ public class ManualDatabindPerf
         }
         ObjectMapper vanilla = new ObjectMapper();
         ObjectMapper smile = new ObjectMapper(new SmileFactory());
+        smile.enable(SerializationFeature.WRITE_ENUMS_USING_INDEX);
 
         MediaItem media = MediaItem.buildItem();
         new ManualDatabindPerf().test(vanilla, smile, media, MediaItem.class);
