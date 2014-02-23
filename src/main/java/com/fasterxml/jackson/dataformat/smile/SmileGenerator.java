@@ -1845,7 +1845,7 @@ public class SmileGenerator
     {
         while (bytesLeft > 0) {
             int room = _outputEnd - _outputTail;
-            if (room < 0) {
+            if (room <= 0) {
                 _flushBuffer();
                 room = _outputEnd - _outputTail;
             }

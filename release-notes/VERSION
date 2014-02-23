@@ -1,11 +1,16 @@
 Project: jackson-dataformat-smile
-Version: 2.3.1 (28-Dec-2013)
+Version: 2.3.2 (xx-Feb-2014)
 
-No functional changes.
+#15: Problem with SmileGenerator._writeBytes(...), bounds checks
+ (reported by lseeker@github)
 
 ------------------------------------------------------------------------
 === History: ===
 ------------------------------------------------------------------------
+
+2.3.1 (28-Dec-2013)
+
+No functional changes.
 
 2.3.0 (14-Nov-2013)
 
