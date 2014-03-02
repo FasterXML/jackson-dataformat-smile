@@ -27,7 +27,7 @@ tree model)
   </scm>
 
   <properties>
-    <jackson.version.core>2.3.2-SNAPSHOT</jackson.version.core>
+    <version.jackson.core>2.3.2</version.jackson.core>
     <!-- Generate PackageVersion.java into this directory. -->
     <packageVersion.dir>com/fasterxml/jackson/dataformat/smile</packageVersion.dir>
     <packageVersion.package>${project.groupId}.smile</packageVersion.package>
@@ -51,7 +51,7 @@ tree model)
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-core</artifactId>
-      <version>${jackson.version.core}</version>
+      <version>${version.jackson.core}</version>
     </dependency>
 
     <!-- and for testing, JUnit is needed, as well as databind -->
@@ -65,7 +65,7 @@ tree model)
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>
-      <version>${jackson.version.core}</version>
+      <version>${version.jackson.core}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

@@ -1,5 +1,5 @@
 Project: jackson-dataformat-smile
-Version: 2.3.2 (xx-Feb-2014)
+Version: 2.3.2 (01-Mar-2014)
 
 #15: Problem with SmileGenerator._writeBytes(...), bounds checks
  (reported by lseeker@github)
