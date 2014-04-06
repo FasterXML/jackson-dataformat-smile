@@ -20,8 +20,11 @@ public class SmileParser extends ParserBase
 {
     /**
      * Enumeration that defines all togglable features for Smile generators.
+     *<P>
+     * NOTE: Alas, can not implement <code>com.fasterxml.jackson.databind.cfg.ConfigFeature</code>
+     * since we do not depend on jackson-databind
      */
-    public enum Feature {
+    public enum Feature /*implements com.fasterxml.jackson.databind.cfg.ConfigFeature*/ {
         /**
          * Feature that determines whether 4-byte Smile header is mandatory in input,
          * or optional. If enabled, it means that only input that starts with the header
@@ -53,9 +56,14 @@ public class SmileParser extends ParserBase
             _defaultState = defaultState;
             _mask = (1 << ordinal());
         }
-        
+
+        //@Override
         public boolean enabledByDefault() { return _defaultState; }
+
+        //@Override
         public int getMask() { return _mask; }
+
+        public boolean enabledIn(int flags) { return (flags & getMask()) != 0; }    
     }
 
     private final static int[] NO_INTS = new int[0];
