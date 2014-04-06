@@ -281,110 +281,28 @@ public class SmileFactory extends JsonFactory
 
     @SuppressWarnings("resource")
     @Override
-    public SmileParser createParser(File f)
-        throws IOException, JsonParseException
-    {
+    public SmileParser createParser(File f) throws IOException {
         return _createParser(new FileInputStream(f), _createContext(f, true));
     }
 
     @Override
-    public SmileParser createParser(URL url)
-        throws IOException, JsonParseException
-    {
+    public SmileParser createParser(URL url) throws IOException {
         return _createParser(_optimizedStreamFromURL(url), _createContext(url, true));
     }
 
     @Override
-    public SmileParser createParser(InputStream in)
-        throws IOException, JsonParseException
-    {
+    public SmileParser createParser(InputStream in) throws IOException {
         return _createParser(in, _createContext(in, false));
     }
-
-    //public JsonParser createJsonParser(Reader r)
     
     @Override
-    public SmileParser createParser(byte[] data)
-        throws IOException, JsonParseException
-    {
+    public SmileParser createParser(byte[] data) throws IOException {
         IOContext ctxt = _createContext(data, true);
         return _createParser(data, 0, data.length, ctxt);
     }
     
     @Override
-    public SmileParser createParser(byte[] data, int offset, int len)
-        throws IOException, JsonParseException
-    {
-        return _createParser(data, offset, len, _createContext(data, true));
-    }
-   
-    /*
-    /**********************************************************
-    /* Overridden parser factory methods, old (pre-2.1)
-    /**********************************************************
-     */
-    
-    /**
-     * @deprecated Since 2.1 Use {@link #createParser(File)} instead
-     * @since 2.1
-     */
-    @SuppressWarnings("resource")
-    @Deprecated
-    @Override
-    public SmileParser createJsonParser(File f)
-        throws IOException, JsonParseException
-    {
-        return _createParser(new FileInputStream(f), _createContext(f, true));
-    }
-
-    /**
-     * @deprecated Since 2.1 Use {@link #createParser(URL)} instead
-     * @since 2.1
-     */
-    @Deprecated
-    @Override
-    public SmileParser createJsonParser(URL url)
-        throws IOException, JsonParseException
-    {
-        return _createParser(_optimizedStreamFromURL(url), _createContext(url, true));
-    }
-
-    /**
-     * @deprecated Since 2.1 Use {@link #createParser(InputStream)} instead
-     * @since 2.1
-     */
-    @Deprecated
-    @Override
-    public SmileParser createJsonParser(InputStream in)
-        throws IOException, JsonParseException
-    {
-        return _createParser(in, _createContext(in, false));
-    }
-
-    //public JsonParser createJsonParser(Reader r)
-    
-    /**
-     * @deprecated Since 2.1 Use {@link #createParser(byte[])} instead
-     * @since 2.1
-     */
-    @Deprecated
-    @Override
-    public SmileParser createJsonParser(byte[] data)
-        throws IOException, JsonParseException
-    {
-        IOContext ctxt = _createContext(data, true);
-        return _createParser(data, 0, data.length, ctxt);
-    }
-    
-    /**
-     * @deprecated Since 2.1 Use {@link #createParser(byte[],int,int)} instead
-     * @since 2.1
-     */
-    @Deprecated
-    @Override
-    public SmileParser createJsonParser(byte[] data, int offset, int len)
-        throws IOException, JsonParseException
-    {
+    public SmileParser createParser(byte[] data, int offset, int len) throws IOException {
         return _createParser(data, offset, len, _createContext(data, true));
     }
 
@@ -402,9 +320,7 @@ public class SmileFactory extends JsonFactory
      * argument is ignored.
      */
     @Override
-    public SmileGenerator createGenerator(OutputStream out, JsonEncoding enc)
-        throws IOException
-    {
+    public SmileGenerator createGenerator(OutputStream out, JsonEncoding enc) throws IOException {
         // false -> we won't manage the stream unless explicitly directed to
         return _createGenerator(out, _createContext(out, false));
     }
@@ -417,67 +333,23 @@ public class SmileFactory extends JsonFactory
      * to be passed to this method.
      */
     @Override
-    public SmileGenerator createGenerator(OutputStream out) throws IOException
-    {
-        // false -> we won't manage the stream unless explicitly directed to
-        return _createGenerator(out, _createContext(out, false));
-    }
-    
-    /*
-    /**********************************************************
-    /* Overridden generator factory methods, old (pre-2.1)
-    /**********************************************************
-     */
-    
-    /**
-     * @deprecated Since 2.1 Use {@link #createGenerator(OutputStream)} instead
-     * @since 2.1
-     */
-    @Deprecated
-    @Override
-    public SmileGenerator createJsonGenerator(OutputStream out, JsonEncoding enc)
-        throws IOException
-    {
+    public SmileGenerator createGenerator(OutputStream out) throws IOException {
         // false -> we won't manage the stream unless explicitly directed to
         return _createGenerator(out, _createContext(out, false));
     }
 
-    /**
-     * @deprecated Since 2.1 Use {@link #createGenerator(OutputStream)} instead
-     * @since 2.1
-     */
-    @Deprecated
-    @Override
-    public SmileGenerator createJsonGenerator(OutputStream out) throws IOException
-    {
-        // false -> we won't manage the stream unless explicitly directed to
-        IOContext ctxt = _createContext(out, false);
-        return _createGenerator(out, ctxt);
-    }
-
-    @Deprecated
-    @Override
-    protected SmileGenerator _createUTF8JsonGenerator(OutputStream out, IOContext ctxt)
-        throws IOException
-    {
-        return _createGenerator(out, ctxt);
-    }
-    
     /*
     /******************************************************
     /* Overridden internal factory methods
     /******************************************************
      */
 
-    //protected IOContext _createContext(Object srcRef, boolean resourceManaged)
-
     /**
      * Overridable factory method that actually instantiates desired
      * parser.
      */
     @Override
-    protected SmileParser _createParser(InputStream in, IOContext ctxt)
-        throws IOException, JsonParseException
+    protected SmileParser _createParser(InputStream in, IOContext ctxt) throws IOException
     {
         return new SmileParserBootstrapper(ctxt, in).constructParser(_parserFeatures,
         		_smileParserFeatures, isEnabled(JsonFactory.Feature.INTERN_FIELD_NAMES),
@@ -489,8 +361,7 @@ public class SmileFactory extends JsonFactory
      * parser.
      */
     @Override
-    protected JsonParser _createParser(Reader r, IOContext ctxt)
-        throws IOException, JsonParseException
+    protected JsonParser _createParser(Reader r, IOContext ctxt) throws IOException
     {
         if (_cfgDelegateToTextual) {
             return super._createParser(r, ctxt);
@@ -503,8 +374,7 @@ public class SmileFactory extends JsonFactory
      * parser.
      */
     @Override
-    protected SmileParser _createParser(byte[] data, int offset, int len, IOContext ctxt)
-        throws IOException, JsonParseException
+    protected SmileParser _createParser(byte[] data, int offset, int len, IOContext ctxt) throws IOException
     {
         return new SmileParserBootstrapper(ctxt, data, offset, len).constructParser(
                 _parserFeatures, _smileParserFeatures,
@@ -517,8 +387,7 @@ public class SmileFactory extends JsonFactory
      * generator.
      */
     @Override
-    protected JsonGenerator _createGenerator(Writer out, IOContext ctxt)
-        throws IOException
+    protected JsonGenerator _createGenerator(Writer out, IOContext ctxt) throws IOException
     {
         if (_cfgDelegateToTextual) {
             return super._createGenerator(out, ctxt);
@@ -541,15 +410,94 @@ public class SmileFactory extends JsonFactory
         }
         throw new UnsupportedOperationException("Can not create generator for non-byte-based target");
     }
+
+    /*
+    /******************************************************
+    /* Deprecated methods
+    /******************************************************
+     */
+
+    /**
+     * @deprecated Since 2.1 Use {@link #createParser(File)} instead
+     * @since 2.1
+     * To be removed in 2.5
+     */
+    @SuppressWarnings("resource") @Deprecated @Override
+    public SmileParser createJsonParser(File f) throws IOException {
+        return _createParser(new FileInputStream(f), _createContext(f, true));
+    }
+
+    /**
+     * @deprecated Since 2.1 Use {@link #createParser(URL)} instead
+     * @since 2.1
+     * To be removed in 2.5
+     */
+    @Deprecated @Override
+    public SmileParser createJsonParser(URL url) throws IOException {
+        return _createParser(_optimizedStreamFromURL(url), _createContext(url, true));
+    }
+
+    /**
+     * @deprecated Since 2.1 Use {@link #createParser(InputStream)} instead
+     * @since 2.1
+     * To be removed in 2.5
+     */
+    @Deprecated @Override
+    public SmileParser createJsonParser(InputStream in) throws IOException {
+        return _createParser(in, _createContext(in, false));
+    }
+
+    /**
+     * @deprecated Since 2.1 Use {@link #createParser(byte[])} instead
+     * @since 2.1
+     * To be removed in 2.5
+     */
+    @Deprecated
+    @Override
+    public SmileParser createJsonParser(byte[] data) throws IOException {
+        return _createParser(data, 0, data.length, _createContext(data, true));
+    }
     
+    /**
+     * @deprecated Since 2.1 Use {@link #createParser(byte[],int,int)} instead
+     * @since 2.1
+     * To be removed in 2.5
+     */
+    @Deprecated
+    @Override
+    public SmileParser createJsonParser(byte[] data, int offset, int len) throws IOException {
+        return _createParser(data, offset, len, _createContext(data, true));
+    }
+
+    /**
+     * @deprecated Since 2.1 Use {@link #createGenerator(OutputStream)} instead
+     * @since 2.1
+     * To be removed in 2.5
+     */
+    @Deprecated @Override
+    public SmileGenerator createJsonGenerator(OutputStream out, JsonEncoding enc) throws IOException {
+        // false -> we won't manage the stream unless explicitly directed to
+        return _createGenerator(out, _createContext(out, false));
+    }    
+
+    /**
+     * @deprecated Since 2.1 Use {@link #createGenerator(OutputStream)} instead
+     * @since 2.1
+     * To be removed in 2.5
+     */
+    @Deprecated @Override
+    public SmileGenerator createJsonGenerator(OutputStream out) throws IOException {
+        // false -> we won't manage the stream unless explicitly directed to
+        return _createGenerator(out, _createContext(out, false));
+    }
+
     /*
     /**********************************************************
     /* Internal methods
     /**********************************************************
      */
     
-    protected SmileGenerator _createGenerator(OutputStream out, IOContext ctxt)
-        throws IOException
+    protected SmileGenerator _createGenerator(OutputStream out, IOContext ctxt) throws IOException
     {
         int feats = _smileGeneratorFeatures;
         /* One sanity check: MUST write header if shared string values setting is enabled,
