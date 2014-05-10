@@ -8,6 +8,8 @@ import com.fasterxml.jackson.dataformat.smile.SmileFactory;
 
 public class ReadPerfUntyped extends ReaderTestBase
 {
+    private ReadPerfUntyped() { }
+
     @Override
     protected int targetSizeMegs() { return 10; }
     

@@ -5,6 +5,8 @@ import com.fasterxml.jackson.dataformat.smile.SmileFactory;
 
 public class ReadPerfMediaItem extends ReaderTestBase
 {
+    private ReadPerfMediaItem() { }
+    
     @Override
     protected int targetSizeMegs() { return 10; }
 
@@ -17,12 +19,12 @@ public class ReadPerfMediaItem extends ReaderTestBase
         SmileFactory sf = new SmileFactory();
         ObjectMapper m = new ObjectMapper(sf);
 
-        byte[] smile = m.writeValueAsBytes(MediaItem.buildItem());
+        final MediaItem item = MediaItem.buildItem();
 
-        new ReadPerfUntyped()
+        new ReadPerfMediaItem()
             .testFromBytes(
-                m, "MediaItem-as-Smile1", smile, MediaItem.class
-                ,m, "MediaItem-as-Smile2", smile, MediaItem.class
+                m, "MediaItem-as-Smile1", item, MediaItem.class
+                ,m, "MediaItem-as-Smile2", item, MediaItem.class
                 );
     }
 }

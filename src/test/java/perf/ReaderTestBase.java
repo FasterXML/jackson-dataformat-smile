@@ -35,10 +35,13 @@ abstract class ReaderTestBase
         // sanity check:
         /*T1 back1 =*/ mapper1.readValue(byteInput1, inputClass1);
         /*T2 back2 =*/ mapper2.readValue(byteInput2, inputClass2);
-        System.out.println("Input successfully round-tripped for both styles...");
+        System.out.println("Input successfully round-tripped for both input types");
 
         _desc1 = String.format("%s (%d bytes)", desc1, byteInput1.length);
         _desc2 = String.format("%s (%d bytes)", desc2, byteInput2.length);
+
+        System.out.printf("Read %d/%d bytes to bind; will do %d repetitions to get about %d megs\n",
+                byteInput1.length, byteInput2.length, REPS, targetSizeMegs());
         
         doTest(mapper1, byteInput1, inputClass1, mapper2, byteInput2, inputClass2);
     }
@@ -47,8 +50,6 @@ abstract class ReaderTestBase
             ObjectMapper mapper2, byte[] byteInput2, Class<?> inputClass2)
         throws Exception
     {
-        System.out.printf("Read %d bytes to bind (%d as array); will do %d repetitions\n",
-                byteInput1.length, byteInput2.length, REPS);
         System.out.print("Warming up");
 
         final ObjectReader jsonReader = mapper1.reader()
