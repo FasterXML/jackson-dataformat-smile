@@ -1873,7 +1873,7 @@ public class SmileParser extends ParserBase
     
     /**
      * Method called to finish parsing of a token so that token contents
-     * are retriable
+     * are retrievable
      */
     protected void _finishToken() throws IOException
     {
