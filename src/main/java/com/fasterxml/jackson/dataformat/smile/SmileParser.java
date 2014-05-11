@@ -1913,34 +1913,32 @@ public class SmileParser extends ParserBase
             }
         }
         // sanity check
-    	_throwInternal();
+        _throwInternal();
     }
 
     protected final void _finishNumberToken(int tb) throws IOException
     {
-        tb &= 0x1F;
-        switch (tb) {
+        switch (tb & 0x1F) {
         case 4:
             _finishInt(); // vint
-            break;
+            return;
         case 5: // vlong
             _finishLong();
-            break;
+            return;
         case 6:
             _finishBigInteger();
-            break;
+            return;
         case 8: // float
             _finishFloat();
-            break;
+            return;
         case 9: // double
             _finishDouble();
-            break;
+            return;
         case 10: // big-decimal
             _finishBigDecimal();
-            break;
-        default:
-            _throwInternal();
+            return;
         }
+        _throwInternal();
     }
     
     /*
