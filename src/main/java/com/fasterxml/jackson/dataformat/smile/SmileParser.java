@@ -1875,7 +1875,7 @@ public class SmileParser extends ParserBase
      * Method called to finish parsing of a token so that token contents
      * are retrievable
      */
-    protected void _finishToken() throws IOException
+    protected final void _finishToken() throws IOException
     {
         _tokenIncomplete = false;
         int tb = _typeByte;
@@ -1919,34 +1919,28 @@ public class SmileParser extends ParserBase
     protected final void _finishNumberToken(int tb) throws IOException
     {
         tb &= 0x1F;
-        int type = (tb >> 2);
-        if (type == 1) { // VInt (zigzag) or BigDecimal
-            int subtype = tb & 0x03;
-            if (subtype == 0) { // (v)int
-                _finishInt();
-            } else if (subtype == 1) { // (v)long
-                _finishLong();
-            } else if (subtype == 2) {
-                _finishBigInteger();
-            } else {
-                _throwInternal();
-            }
-            return;
+        switch (tb) {
+        case 4:
+            _finishInt(); // vint
+            break;
+        case 5: // vlong
+            _finishLong();
+            break;
+        case 6:
+            _finishBigInteger();
+            break;
+        case 8: // float
+            _finishFloat();
+            break;
+        case 9: // double
+            _finishDouble();
+            break;
+        case 10: // big-decimal
+            _finishBigDecimal();
+            break;
+        default:
+            _throwInternal();
         }
-        if (type == 2) { // other numbers
-            switch (tb & 0x03) {
-            case 0: // float
-                _finishFloat();
-                return;
-            case 1: // double
-                _finishDouble();
-                return;
-            case 2: // big-decimal
-                _finishBigDecimal();
-                return;
-            }
-        }
-        _throwInternal();
     }
     
     /*
