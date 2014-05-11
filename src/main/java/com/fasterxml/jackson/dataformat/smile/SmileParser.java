@@ -378,8 +378,7 @@ public class SmileParser extends ParserBase
      */
     
     @Override
-    protected final boolean loadMore()
-        throws IOException
+    protected final boolean loadMore() throws IOException
     {
         _currInputProcessed += _inputEnd;
         //_currInputRowStart -= _inputEnd;
@@ -405,8 +404,7 @@ public class SmileParser extends ParserBase
      * Helper method that will try to load at least specified number bytes in
      * input buffer, possible moving existing data around if necessary
      */
-    protected final void _loadToHaveAtLeast(int minAvailable)
-        throws IOException
+    protected final void _loadToHaveAtLeast(int minAvailable) throws IOException
     {
         // No input stream, no leading (either we are closed, or have non-stream input source)
         if (_inputStream == null) {
@@ -441,10 +439,6 @@ public class SmileParser extends ParserBase
     @Override
     protected void _closeInput() throws IOException
     {
-        /* 25-Nov-2008, tatus: As per [JACKSON-16] we are not to call close()
-         *   on the underlying InputStream, unless we "own" it, or auto-closing
-         *   feature is enabled.
-         */
         if (_inputStream != null) {
             if (_ioContext.isResourceManaged() || isEnabled(JsonParser.Feature.AUTO_CLOSE_SOURCE)) {
                 _inputStream.close();
@@ -578,10 +572,11 @@ public class SmileParser extends ParserBase
         _typeByte = ch;
         switch ((ch >> 5) & 0x7) {
         case 0: // short shared string value reference
-            if (ch == 0) { // important: this is invalid, don't accept
-                _reportError("Invalid token byte 0x00");
+            if (ch != 0) { // 0x0 is invalid
+                return _handleSharedString(ch-1);
             }
-            return _handleSharedString(ch-1);
+//            _reportError("Invalid token byte 0x00");
+            break;
 
         case 1: // simple literals, numbers
             {
@@ -609,11 +604,11 @@ public class SmileParser extends ParserBase
                     break;
                 }
                 if (typeBits < 12) { // floating-point
-                    int subtype = typeBits & 0x3;
-                    if (subtype <= 0x2) { // 0x3 reserved (should never occur)
+                    if (typeBits < 11) { // 0x0B (11) reserved (should never occur)
                         _tokenIncomplete = true;
                         _numTypesValid = 0;
-                        _got32BitFloat = (subtype == 0);
+//                        _got32BitFloat = (subtype == 0);
+                        _got32BitFloat = (typeBits == 8);
                         return (_currToken = JsonToken.VALUE_NUMBER_FLOAT);
                     }
                     break;

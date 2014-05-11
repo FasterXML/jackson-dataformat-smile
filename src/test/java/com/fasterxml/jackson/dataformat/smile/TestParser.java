@@ -320,7 +320,7 @@ public class TestParser
             JsonToken t = p.nextToken();
             fail("Expected parse error, got: "+t);
         } catch (IOException e) {
-            verifyException(e, "Invalid token byte 0x00");
+            verifyException(e, "Invalid type marker byte 0x0");
         }
         p.close();
     }
