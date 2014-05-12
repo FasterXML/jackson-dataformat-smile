@@ -643,10 +643,9 @@ public class SmileParser extends ParserBase
         case 5: // short Unicode
             // No need to decode, unless we have to keep track of back-references (for shared string values)
             if (_seenStringValueCount >= 0) { // shared text values enabled
-                _addSeenStringValue();
-            } else {
-                _tokenIncomplete = true;
+                return _addSeenStringValue();
             }
+            _tokenIncomplete = true;
             return (_currToken = JsonToken.VALUE_STRING);
         case 6: // small integers; zigzag encoded
             _numberInt = SmileUtil.zigzagDecode(ch & 0x1F);
@@ -705,17 +704,20 @@ public class SmileParser extends ParserBase
         return (_currToken = JsonToken.VALUE_STRING);
     }
 
-    private final void _addSeenStringValue() throws IOException {
+    private final JsonToken _addSeenStringValue() throws IOException
+    {
         _finishToken();
+        String v = _textBuffer.contentsAsString();
         if (_seenStringValueCount < _seenStringValues.length) {
             // !!! TODO: actually only store char[], first time around?
-            _seenStringValues[_seenStringValueCount++] = _textBuffer.contentsAsString();
-            return;
+            _seenStringValues[_seenStringValueCount++] = v;
+        } else {
+            _expandSeenStringValues(v);
         }
-        _expandSeenStringValues();
+        return (_currToken = JsonToken.VALUE_STRING);
     }
     
-    private final void _expandSeenStringValues()
+    private final void _expandSeenStringValues(String newText)
     {
         String[] oldShared = _seenStringValues;
         int len = oldShared.length;
@@ -734,7 +736,7 @@ public class SmileParser extends ParserBase
             System.arraycopy(oldShared, 0, newShared, 0, oldShared.length);
         }
         _seenStringValues = newShared;
-        _seenStringValues[_seenStringValueCount++] = _textBuffer.contentsAsString();
+        _seenStringValues[_seenStringValueCount++] = newText;
     }
 
     // base impl is fine:
@@ -942,20 +944,14 @@ public class SmileParser extends ParserBase
             case 3: // short ASCII
                 _currToken = JsonToken.VALUE_STRING;
                 _inputPtr = ptr;
-                _decodeShortAsciiValue(1 + (ch & 0x3F));
                 {
-                    // No need to decode, unless we have to keep track of back-references (for shared string values)
-                    String text;
+                    final String text = _decodeShortAsciiValue(1 + (ch & 0x3F));
                     if (_seenStringValueCount >= 0) { // shared text values enabled
                         if (_seenStringValueCount < _seenStringValues.length) {
-                            text = _textBuffer.contentsAsString();
                             _seenStringValues[_seenStringValueCount++] = text;
                         } else {
-                            _expandSeenStringValues();
-                            text = _textBuffer.contentsAsString();
+                            _expandSeenStringValues(text);
                         }
-                    } else {
-                        text = _textBuffer.contentsAsString();
                     }
                     return text;
                 }
@@ -965,20 +961,14 @@ public class SmileParser extends ParserBase
             case 5: // short Unicode
                 _currToken = JsonToken.VALUE_STRING;
                 _inputPtr = ptr;
-                _decodeShortUnicodeValue(2 + (ch & 0x3F));
                 {
-                    // No need to decode, unless we have to keep track of back-references (for shared string values)
-                    String text;
+                    final String text = _decodeShortUnicodeValue(2 + (ch & 0x3F));
                     if (_seenStringValueCount >= 0) { // shared text values enabled
                         if (_seenStringValueCount < _seenStringValues.length) {
-                            text = _textBuffer.contentsAsString();
                             _seenStringValues[_seenStringValueCount++] = text;
                         } else {
-                            _expandSeenStringValues();
-                            text = _textBuffer.contentsAsString();
+                            _expandSeenStringValues(text);
                         }
-                    } else {
-                        text = _textBuffer.contentsAsString();
                     }
                     return text;
                 }
@@ -1057,8 +1047,7 @@ public class SmileParser extends ParserBase
      * Method can be called for any event.
      */
     @Override    
-    public String getText()
-        throws IOException
+    public String getText() throws IOException
     {
         if (_tokenIncomplete) {
             _tokenIncomplete = false;
@@ -1066,13 +1055,11 @@ public class SmileParser extends ParserBase
             int tb = _typeAsInt;
             int type = (tb >> 5);
             if (type == 2 || type == 3) { // tiny & short ASCII
-                _decodeShortAsciiValue(1 + (tb & 0x3F));
-                return _textBuffer.contentsAsString();
+                return _decodeShortAsciiValue(1 + (tb & 0x3F));
             }
             if (type == 4 || type == 5) { // tiny & short Unicode
                  // short unicode; note, lengths 2 - 65  (off-by-one compared to ASCII)
-                _decodeShortUnicodeValue(2 + (tb & 0x3F));
-                return _textBuffer.contentsAsString();
+                return _decodeShortUnicodeValue(2 + (tb & 0x3F));
             }
             _finishToken();
         }
@@ -1086,25 +1073,23 @@ public class SmileParser extends ParserBase
         if (t == JsonToken.FIELD_NAME) {
             return _parsingContext.getCurrentName();
         }
-        if (t.isNumeric()) {
-            // TODO: optimize?
+        if (t.isNumeric()) { // TODO: optimize?
             return getNumberValue().toString();
         }
         return _currToken.asString();
     }
 
     @Override
-    public char[] getTextCharacters()
-        throws IOException
+    public char[] getTextCharacters() throws IOException
     {
         if (_currToken != null) { // null only before/after document
             if (_tokenIncomplete) {
                 _finishToken();
             }
-            switch (_currToken) {                
-            case VALUE_STRING:
+            if (_currToken == JsonToken.VALUE_STRING) {
                 return _textBuffer.getTextBuffer();
-            case FIELD_NAME:
+            }
+            if (_currToken == JsonToken.FIELD_NAME) {
                 if (!_nameCopied) {
                     String name = _parsingContext.getCurrentName();
                     int nameLen = name.length();
@@ -1117,31 +1102,26 @@ public class SmileParser extends ParserBase
                     _nameCopied = true;
                 }
                 return _nameCopyBuffer;
-
-                // fall through
-            case VALUE_NUMBER_INT:
-            case VALUE_NUMBER_FLOAT:
-                // TODO: optimize
-                return getNumberValue().toString().toCharArray();
-                
-            default:
-                return _currToken.asCharArray();
             }
+            if (_currToken.isNumeric()) { // TODO: optimize?
+                return getNumberValue().toString().toCharArray();
+            }
+            return _currToken.asCharArray();
         }
         return null;
     }
 
     @Override    
-    public int getTextLength()
-        throws IOException
+    public int getTextLength() throws IOException
     {
         if (_currToken != null) { // null only before/after document
             if (_tokenIncomplete) {
                 _finishToken();
             }
-            switch (_currToken) {
-            case VALUE_STRING:
+            if (_currToken == JsonToken.VALUE_STRING) {
                 return _textBuffer.size();                
+            }
+            switch (_currToken) {
             case FIELD_NAME:
                 return _parsingContext.getCurrentName().length();
                 // fall through
@@ -2224,7 +2204,7 @@ public class SmileParser extends ParserBase
     /**********************************************************
      */
 
-    protected final void _decodeShortAsciiValue(int len) throws IOException
+    protected final String _decodeShortAsciiValue(int len) throws IOException
     {
         if ((_inputEnd - _inputPtr) < len) {
             _loadToHaveAtLeast(len);
@@ -2239,12 +2219,12 @@ public class SmileParser extends ParserBase
         for (final int end = inPtr + len; inPtr < end; ++inPtr) {
             outBuf[outPtr++] = (char) inBuf[inPtr];            
         }
-	
         _inputPtr = inPtr;
         _textBuffer.setCurrentLength(len);
+        return _textBuffer.contentsAsString();
     }
 
-    protected final void _decodeShortUnicodeValue(int len) throws IOException
+    protected final String _decodeShortUnicodeValue(int len) throws IOException
     {
         if ((_inputEnd - _inputPtr) < len) {
             _loadToHaveAtLeast(len);
@@ -2274,18 +2254,19 @@ public class SmileParser extends ParserBase
 	                | ((inputBuf[inPtr++] & 0x3F) << 12)
 	                | ((inputBuf[inPtr++] & 0x3F) << 6)
 	                | (inputBuf[inPtr++] & 0x3F);
-	            // note: this is the codepoint value; need to split, too
-	            i -= 0x10000;
-	            outBuf[outPtr++] = (char) (0xD800 | (i >> 10));
-	            i = 0xDC00 | (i & 0x3FF);
-	            break;
-	        default: // invalid
-	            _reportError("Invalid byte "+Integer.toHexString(i)+" in short Unicode text block");
+                    // note: this is the codepoint value; need to split, too
+                    i -= 0x10000;
+                    outBuf[outPtr++] = (char) (0xD800 | (i >> 10));
+                    i = 0xDC00 | (i & 0x3FF);
+                    break;
+                default: // invalid
+                    _reportError("Invalid byte "+Integer.toHexString(i)+" in short Unicode text block");
                 }
-	    }
-	    outBuf[outPtr++] = (char) i;
+            }
+            outBuf[outPtr++] = (char) i;
         }        
         _textBuffer.setCurrentLength(outPtr);
+        return _textBuffer.contentsAsString();
     }
 
     private final void _decodeLongAscii() throws IOException
