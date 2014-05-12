@@ -561,7 +561,7 @@ public class SmileParser extends ParserBase
         // also: clear any data retained so far
         _binaryValue = null;
         // Two main modes: values, and field names.
-        if (_parsingContext.inObject() && _currToken != JsonToken.FIELD_NAME) {
+        if (_currToken != JsonToken.FIELD_NAME && _parsingContext.inObject()) {
             return (_currToken = _handleFieldName());
         }
         if (_inputPtr >= _inputEnd) {
@@ -762,7 +762,7 @@ public class SmileParser extends ParserBase
     public boolean nextFieldName(SerializableString str) throws IOException
     {
         // Two parsing modes; can only succeed if expecting field name, so handle that first:
-        if (_parsingContext.inObject() && _currToken != JsonToken.FIELD_NAME) {
+        if (_currToken != JsonToken.FIELD_NAME && _parsingContext.inObject()) {
             byte[] nameBytes = str.asQuotedUTF8();
             final int byteLen = nameBytes.length;
             // need room for type byte, name bytes, possibly end marker, so:
