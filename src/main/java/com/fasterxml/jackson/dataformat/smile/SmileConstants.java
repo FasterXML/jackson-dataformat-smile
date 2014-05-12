@@ -212,18 +212,10 @@ public final class SmileConstants
     /**********************************************************
      */
 
-    /**
-     * @deprecated Since 2.1, use {@link #TOKEN_PREFIX_INTEGER} instead
-     */
-    @Deprecated
-    public final static int TOKEN_MISC_INTEGER = 0x24;  
+    public final static int INT_MISC_BINARY_7BIT = 0xE8;
 
-    /**
-     * @deprecated Since 2.1, use {@link #TOKEN_PREFIX_FP} instead
-     */
-    @Deprecated
-    public final static int TOKEN_MISC_FP = 0x28;
-
+    public final static int INT_MISC_BINARY_RAW = 0xFD;
+    
     /**
      * Type (for misc, other) used for
      * variable length UTF-8 encoded text, when it is known to only contain ASCII chars.
@@ -246,20 +238,14 @@ public final class SmileConstants
      * in encoded data (like 0xFF)
      * Note: 2 LSB are reserved for future use; must be zeroes for now
      */
-    public final static byte TOKEN_MISC_BINARY_7BIT = (byte) 0xE8;
+    public final static byte TOKEN_MISC_BINARY_7BIT = (byte) INT_MISC_BINARY_7BIT;
 
-    /**
-     * @deprecated (since 2.1) Use {@link #TOKEN_PREFIX_SHARED_STRING_LONG} instead
-     */
-    @Deprecated
-    public final static byte A_TOKEN_MISC_SHARED_STRING_LONG = (byte) 0xEC;
-    
     /**
      * Raw binary data marker is specifically chosen as separate from
      * other types, since it can have significant impact on framing
      * (or rather fast scanning based on structure and framing markers).
      */
-    public final static byte TOKEN_MISC_BINARY_RAW = (byte) 0xFD;
+    public final static byte TOKEN_MISC_BINARY_RAW = (byte) INT_MISC_BINARY_RAW;
 
     /*
     /**********************************************************

@@ -1,8 +1,6 @@
 package com.fasterxml.jackson.dataformat.smile;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.lang.ref.SoftReference;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -139,9 +137,9 @@ public class SmileParser extends ParserBase
     protected boolean _tokenIncomplete = false;
 
     /**
-     * Type byte of the current token
+     * Type byte of the current token (as in)
      */
-    protected int _typeByte;
+    protected int _typeAsInt;
 
     /**
      * Specific flag that is set when we encountered a 32-bit
@@ -150,6 +148,12 @@ public class SmileParser extends ParserBase
      * format does, and we want to retain that separation.
      */
     protected boolean _got32BitFloat;
+
+    /**
+     * Alternative to {@link #_tokenInputTotal} that will only contain
+     * offset within input buffer, as int.
+     */
+    protected int _tokenOffsetForTotal;
 
     /*
     /**********************************************************
@@ -353,9 +357,11 @@ public class SmileParser extends ParserBase
     public JsonLocation getTokenLocation()
     {
         // token location is correctly managed...
+        long total = _currInputProcessed + _tokenOffsetForTotal;
+        // 2.4: used to be: _tokenInputTotal
         return new JsonLocation(_ioContext.getSourceReference(),
-                _tokenInputTotal, // bytes
-                -1, -1, (int) _tokenInputTotal); // char offset, line, column
+                total, // bytes
+                -1, -1, (int) total); // char offset, line, column
     }   
 
     /**
@@ -550,7 +556,8 @@ public class SmileParser extends ParserBase
         if (_tokenIncomplete) {
             _skipIncomplete();
         }
-        _tokenInputTotal = _currInputProcessed + _inputPtr;
+        _tokenOffsetForTotal = _inputPtr;
+//        _tokenInputTotal = _currInputProcessed + _inputPtr;
         // also: clear any data retained so far
         _binaryValue = null;
         // Two main modes: values, and field names.
@@ -568,9 +575,9 @@ public class SmileParser extends ParserBase
                 return (_currToken = null);
             }
         }
-        int ch = _inputBuffer[_inputPtr++];
-        _typeByte = ch;
-        switch ((ch >> 5) & 0x7) {
+        int ch = _inputBuffer[_inputPtr++] & 0xFF;
+        _typeAsInt = ch;
+        switch (ch >> 5) {
         case 0: // short shared string value reference
             if (ch != 0) { // 0x0 is invalid
                 return _handleSharedString(ch-1);
@@ -761,10 +768,10 @@ public class SmileParser extends ParserBase
             // need room for type byte, name bytes, possibly end marker, so:
             if ((_inputPtr + byteLen + 1) < _inputEnd) { // maybe...
                 int ptr = _inputPtr;
-                int ch = _inputBuffer[ptr++];
-                _typeByte = ch;
+                int ch = _inputBuffer[ptr++] & 0xFF;
+                _typeAsInt = ch;
                 main_switch:
-                switch ((ch >> 6) & 3) {
+                switch (ch >> 6) {
                 case 0: // misc, including end marker
                     switch (ch) {
                     case 0x20: // empty String as name, legal if unusual
@@ -897,20 +904,18 @@ public class SmileParser extends ParserBase
                 }
                 ptr = _inputPtr;
             }
-            int ch = _inputBuffer[ptr++];
-            _tokenInputTotal = _currInputProcessed + _inputPtr;
+            _tokenOffsetForTotal = ptr;
+//          _tokenInputTotal = _currInputProcessed + _inputPtr;
+            int ch = _inputBuffer[ptr++] & 0xFF;
+            _typeAsInt = ch;
 
             // also: clear any data retained so far
             _binaryValue = null;
-            _typeByte = ch;
 
-            switch ((ch >> 5) & 0x7) {
+            switch (ch >> 5) {
             case 0: // short shared string value reference
-                if (ch == 0) { // important: this is invalid, don't accept
-                    _reportError("Invalid token byte 0x00");
-                }
+                if (ch != 0) {
                 // _handleSharedString...
-                {
                     --ch;
                     if (ch >= _seenStringValueCount) {
                         _reportInvalidSharedStringValue(ch);
@@ -920,6 +925,9 @@ public class SmileParser extends ParserBase
                     _textBuffer.resetWithString(text);
                     _currToken = JsonToken.VALUE_STRING;
                     return text;
+                } else {
+                    // important: this is invalid, don't accept
+                    _reportError("Invalid token byte 0x00");
                 }
 
             case 1: // simple literals, numbers
@@ -1004,13 +1012,12 @@ public class SmileParser extends ParserBase
                 break;
             }
         }
-        // otherwise fall back to generic handling:
+        // otherwise fall back to generic handling (note: we do NOT assign 'ptr')
         return (nextToken() == JsonToken.VALUE_STRING) ? getText() : null;
     }
 
     @Override
-    public int nextIntValue(int defaultValue)
-        throws IOException
+    public int nextIntValue(int defaultValue) throws IOException
     {
         if (nextToken() == JsonToken.VALUE_NUMBER_INT) {
             return getIntValue();
@@ -1019,8 +1026,7 @@ public class SmileParser extends ParserBase
     }
 
     @Override
-    public long nextLongValue(long defaultValue)
-        throws IOException
+    public long nextLongValue(long defaultValue) throws IOException
     {
         if (nextToken() == JsonToken.VALUE_NUMBER_INT) {
             return getLongValue();
@@ -1061,8 +1067,8 @@ public class SmileParser extends ParserBase
         if (_tokenIncomplete) {
             _tokenIncomplete = false;
             // Let's inline part of "_finishToken", common case
-            int tb = _typeByte;
-            int type = (tb >> 5) & 0x7;
+            int tb = _typeAsInt;
+            int type = (tb >> 5);
             if (type == 2 || type == 3) { // tiny & short ASCII
                 _decodeShortAsciiValue(1 + (tb & 0x3F));
                 return _textBuffer.contentsAsString();
@@ -1236,7 +1242,7 @@ public class SmileParser extends ParserBase
 
         // otherwise, handle, mark as complete
         // first, raw inlined binary data (simple)
-        if (_typeByte == SmileConstants.TOKEN_MISC_BINARY_RAW) {
+        if (_typeAsInt == SmileConstants.INT_MISC_BINARY_RAW) {
             final int totalCount = _readUnsignedVInt();
             int left = totalCount;
             while (left > 0) {
@@ -1253,7 +1259,7 @@ public class SmileParser extends ParserBase
             _tokenIncomplete = false;
             return totalCount;
         }
-        if (_typeByte != SmileConstants.TOKEN_MISC_BINARY_7BIT) {
+        if (_typeAsInt != SmileConstants.INT_MISC_BINARY_7BIT) {
             _throwInternal();
         }
         // or, alternative, 7-bit encoded stuff:
@@ -1337,10 +1343,10 @@ public class SmileParser extends ParserBase
         if (_inputPtr >= _inputEnd) {
             loadMoreGuaranteed();
         }
-        int ch = _inputBuffer[_inputPtr++];
+        int ch = _inputBuffer[_inputPtr++] & 0xFF;
         // is this needed?
-        _typeByte = ch;
-        switch ((ch >> 6) & 3) {
+        _typeAsInt = ch;
+        switch (ch >> 6) {
         case 0: // misc, including end marker
             switch (ch) {
             case 0x20: // empty String as name, legal if unusual
@@ -1432,7 +1438,7 @@ public class SmileParser extends ParserBase
             break;
         }
         // Other byte values are illegal
-        _reportError("Invalid type marker byte 0x"+Integer.toHexString(_typeByte)+" for expected field name (or END_OBJECT marker)");
+        _reportError("Invalid type marker byte 0x"+Integer.toHexString(_typeAsInt)+" for expected field name (or END_OBJECT marker)");
         return null;
     }
 
@@ -1856,9 +1862,9 @@ public class SmileParser extends ParserBase
     protected void _parseNumericValue(int expType) throws IOException
     {
         if (_tokenIncomplete) {
-            int tb = _typeByte;
+            int tb = _typeAsInt;
     	        // ensure we got a numeric type with value that is lazily parsed
-            if (((tb >> 5) & 0x7) != 1) {
+            if ((tb >> 5) != 1) {
                 _reportError("Current token ("+_currToken+") not numeric, can not use numeric value accessors");
             }
             _tokenIncomplete = false;
@@ -1873,9 +1879,9 @@ public class SmileParser extends ParserBase
     protected final void _finishToken() throws IOException
     {
         _tokenIncomplete = false;
-        int tb = _typeByte;
+        int tb = _typeAsInt;
 
-        int type = ((tb >> 5) & 0x7);
+        int type = (tb >> 5);
         if (type == 1) { // simple literals, numbers
             _finishNumberToken(tb);
             return;
@@ -2357,8 +2363,8 @@ public class SmileParser extends ParserBase
     protected void _skipIncomplete() throws IOException
     {
         _tokenIncomplete = false;
-        int tb = _typeByte;
-        switch ((tb >> 5) & 0x7) {
+        int tb = _typeAsInt;
+        switch (tb >> 5) {
         case 1: // simple literals, numbers
             tb &= 0x1F;
             // next 3 bytes define subtype
