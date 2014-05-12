@@ -2027,6 +2027,35 @@ public class SmileParser extends ParserBase
 
     private final void  _finishLong() throws IOException
     {
+        int ptr = _inputPtr;
+        final int maxEnd = ptr+11;
+        if (maxEnd >= _inputEnd) {
+            _finishLongSlow();
+            return;
+        }
+        int i = _inputBuffer[ptr++]; // first 7 bits
+        i = (i << 7) + _inputBuffer[ptr++]; // 14 bits
+        i = (i << 7) + _inputBuffer[ptr++]; // 21
+        i = (i << 7) + _inputBuffer[ptr++];
+
+        // Ok: couple of bytes more
+        long l = i;
+        do {
+            int value = _inputBuffer[ptr++];
+            if (value < 0) {
+                l = (l << 6) + (value & 0x3F);
+                _inputPtr = ptr;
+                _numberLong = SmileUtil.zigzagDecode(l);
+                _numTypesValid = NR_LONG;
+                return;
+            }
+            l = (l << 7) + value;
+        } while (ptr < maxEnd);
+        _reportError("Corrupt input; 32-bit VInt extends beyond 5 data bytes");
+    }
+
+    private final void  _finishLongSlow() throws IOException
+    {
         // Ok, first, will always get 4 full data bytes first; 1 was already passed
         long l = (long) _fourBytesToInt();
         // and loop for the rest
@@ -2035,11 +2064,11 @@ public class SmileParser extends ParserBase
                 loadMoreGuaranteed();
             }
             int value = _inputBuffer[_inputPtr++];
-    	        if (value < 0) {
-    	            l = (l << 6) + (value & 0x3F);
-    	            _numberLong = SmileUtil.zigzagDecode(l);
-    	            _numTypesValid = NR_LONG;
-    	            return;
+            if (value < 0) {
+                l = (l << 6) + (value & 0x3F);
+                _numberLong = SmileUtil.zigzagDecode(l);
+                _numTypesValid = NR_LONG;
+                return;
     	        }
     	        l = (l << 7) + value;
     	    }
