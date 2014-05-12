@@ -602,23 +602,16 @@ public class SmileParser extends ParserBase
                     }
                 }
                 // next 3 bytes define subtype
-                if (typeBits < 8) { // VInt (zigzag), BigInteger
-                    if ((typeBits & 0x3) <= 0x2) { // 0x3 reserved (should never occur)
-                        _tokenIncomplete = true;
-                        _numTypesValid = 0;
-                        return (_currToken = JsonToken.VALUE_NUMBER_INT);
-                    }
-                    break;
+                if (typeBits <= 6) { // VInt (zigzag), BigInteger
+                    _tokenIncomplete = true;
+                    _numTypesValid = 0;
+                    return (_currToken = JsonToken.VALUE_NUMBER_INT);
                 }
-                if (typeBits < 12) { // floating-point
-                    if (typeBits < 11) { // 0x0B (11) reserved (should never occur)
-                        _tokenIncomplete = true;
-                        _numTypesValid = 0;
-//                        _got32BitFloat = (subtype == 0);
-                        _got32BitFloat = (typeBits == 8);
-                        return (_currToken = JsonToken.VALUE_NUMBER_FLOAT);
-                    }
-                    break;
+                if (typeBits < 11 && typeBits != 7) { // floating-point
+                    _got32BitFloat = (typeBits == 8);
+                    _tokenIncomplete = true;
+                    _numTypesValid = 0;
+                    return (_currToken = JsonToken.VALUE_NUMBER_FLOAT);
                 }
                 if (typeBits == 0x1A) { // == 0x3A == ':' -> possibly header signature for next chunk?
                     if (handleSignature(false, false)) {
@@ -632,8 +625,8 @@ public class SmileParser extends ParserBase
                         }
                         return (_currToken = null);
                     }
+                    _reportError("Unrecognized token byte 0x3A (malformed segment header?");
             	}
-            	_reportError("Unrecognized token byte 0x3A (malformed segment header?");
             }
             // and everything else is reserved, for now
             break;
@@ -645,13 +638,12 @@ public class SmileParser extends ParserBase
             // fall through
         case 5: // short Unicode
             // No need to decode, unless we have to keep track of back-references (for shared string values)
-            _currToken = JsonToken.VALUE_STRING;
             if (_seenStringValueCount >= 0) { // shared text values enabled
                 _addSeenStringValue();
             } else {
                 _tokenIncomplete = true;
             }
-            return _currToken;
+            return (_currToken = JsonToken.VALUE_STRING);
         case 6: // small integers; zigzag encoded
             _numberInt = SmileUtil.zigzagDecode(ch & 0x1F);
             _numTypesValid = NR_INT;
