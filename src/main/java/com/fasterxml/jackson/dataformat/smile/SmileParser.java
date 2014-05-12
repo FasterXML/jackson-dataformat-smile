@@ -744,7 +744,7 @@ public class SmileParser extends ParserBase
 
     @Override
     public NumberType getNumberType() throws IOException {
-        if (_got32BitFloat) {
+        if (_got32BitFloat && _currToken == JsonToken.VALUE_NUMBER_FLOAT) {
             return NumberType.FLOAT;
         }
         return super.getNumberType();
