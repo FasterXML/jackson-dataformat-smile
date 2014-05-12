@@ -601,6 +601,14 @@ public class SmileParser extends ParserBase
                         return (_currToken = JsonToken.VALUE_TRUE);
                     }
                 }
+                if (typeBits == 4) {
+                    if ((_inputPtr + 4) < _inputEnd) {
+                        return _finishIntQuick();
+                    }
+                    _tokenIncomplete = true;
+                    _numTypesValid = 0;
+                    return (_currToken = JsonToken.VALUE_NUMBER_INT);
+                }
                 // next 3 bytes define subtype
                 if (typeBits <= 6) { // VInt (zigzag), BigInteger
                     _tokenIncomplete = true;
@@ -1939,6 +1947,37 @@ public class SmileParser extends ParserBase
     /* Internal methods, secondary Number parsing
     /**********************************************************
      */
+
+    private final JsonToken _finishIntQuick() throws IOException
+    {
+        int value = _inputBuffer[_inputPtr++];
+        int i;
+         if (value < 0) { // 6 bits
+             value &= 0x3F;
+         } else {
+             i = _inputBuffer[_inputPtr++];
+             if (i >= 0) { // 13 bits
+                 value = (value << 7) + i;
+                 i = _inputBuffer[_inputPtr++];
+                 if (i >= 0) {
+                     value = (value << 7) + i;
+                     i = _inputBuffer[_inputPtr++];
+                     if (i >= 0) {
+                         value = (value << 7) + i;
+                         // and then we must get negative
+                         i = _inputBuffer[_inputPtr++];
+                         if (i >= 0) {
+                             _reportError("Corrupt input; 32-bit VInt extends beyond 5 data bytes");
+                         }
+                     }
+                 }
+             }
+             value = (value << 6) + (i & 0x3F);
+         }
+        _numberInt = SmileUtil.zigzagDecode(value);
+        _numTypesValid = NR_INT;
+        return (_currToken = JsonToken.VALUE_NUMBER_INT);
+    }
     
     private final void _finishInt() throws IOException
     {
@@ -2005,6 +2044,37 @@ public class SmileParser extends ParserBase
     	    }
     }
 
+    private final int _fourBytesToInt()  throws IOException
+    {
+        int ptr = _inputPtr;
+        if ((ptr + 3) >= _inputEnd) {
+            return _fourBytesToIntSlow();
+        }
+        int i = _inputBuffer[ptr++]; // first 7 bits
+        i = (i << 7) + _inputBuffer[ptr++]; // 14 bits
+        i = (i << 7) + _inputBuffer[ptr++]; // 21
+        i = (i << 7) + _inputBuffer[ptr++];
+        _inputPtr = ptr;
+        return i;
+    }
+
+    private final int _fourBytesToIntSlow()  throws IOException
+    {
+        int i = _inputBuffer[_inputPtr++]; // first 7 bits
+        if (_inputPtr >= _inputEnd) {
+            loadMoreGuaranteed();
+        }
+        i = (i << 7) + _inputBuffer[_inputPtr++]; // 14 bits
+        if (_inputPtr >= _inputEnd) {
+            loadMoreGuaranteed();
+        }
+        i = (i << 7) + _inputBuffer[_inputPtr++]; // 21
+        if (_inputPtr >= _inputEnd) {
+            loadMoreGuaranteed();
+        }
+        return (i << 7) + _inputBuffer[_inputPtr++];
+    }
+    
     private final void _finishBigInteger() throws IOException
     {
         byte[] raw = _read7BitBinaryWithLength();
@@ -2025,48 +2095,25 @@ public class SmileParser extends ParserBase
     	    _numTypesValid = NR_DOUBLE;
     }
 
-    private final void _finishDouble()
-	throws IOException
+    private final void _finishDouble() throws IOException
     {
         // ok; let's take two sets of 4 bytes (each is int)
-	long hi = _fourBytesToInt();
-	long value = (hi << 28) + (long) _fourBytesToInt();
-	// and then remaining 2 bytes
-	if (_inputPtr >= _inputEnd) {
-	    loadMoreGuaranteed();
-	}
-	value = (value << 7) + _inputBuffer[_inputPtr++];
-	if (_inputPtr >= _inputEnd) {
-	    loadMoreGuaranteed();
-	}
-	value = (value << 7) + _inputBuffer[_inputPtr++];
-	_numberDouble = Double.longBitsToDouble(value);
-	_numTypesValid = NR_DOUBLE;
-    }
-
-    private final int _fourBytesToInt() 
-        throws IOException
-    {
-	if (_inputPtr >= _inputEnd) {
-		loadMoreGuaranteed();
-	}
-	int i = _inputBuffer[_inputPtr++]; // first 7 bits
-	if (_inputPtr >= _inputEnd) {
-		loadMoreGuaranteed();
-	}
-	i = (i << 7) + _inputBuffer[_inputPtr++]; // 14 bits
-	if (_inputPtr >= _inputEnd) {
-		loadMoreGuaranteed();
-	}
-	i = (i << 7) + _inputBuffer[_inputPtr++]; // 21
-	if (_inputPtr >= _inputEnd) {
-		loadMoreGuaranteed();
-	}
-	return (i << 7) + _inputBuffer[_inputPtr++];
+        long hi = _fourBytesToInt();
+        long value = (hi << 28) + (long) _fourBytesToInt();
+        // and then remaining 2 bytes
+        if (_inputPtr >= _inputEnd) {
+            loadMoreGuaranteed();
+        }
+        value = (value << 7) + _inputBuffer[_inputPtr++];
+        if (_inputPtr >= _inputEnd) {
+            loadMoreGuaranteed();
+        }
+        value = (value << 7) + _inputBuffer[_inputPtr++];
+        _numberDouble = Double.longBitsToDouble(value);
+        _numTypesValid = NR_DOUBLE;
     }
 	
-    private final void _finishBigDecimal()
-        throws IOException
+    private final void _finishBigDecimal() throws IOException
     {
         int scale = SmileUtil.zigzagDecode(_readUnsignedVInt());
         byte[] raw = _read7BitBinaryWithLength();
