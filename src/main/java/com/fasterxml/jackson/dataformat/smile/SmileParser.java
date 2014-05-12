@@ -602,11 +602,7 @@ public class SmileParser extends ParserBase
                     }
                 }
                 if (typeBits == 4) {
-                    if ((_inputPtr + 4) < _inputEnd) {
-                        return _finishIntQuick();
-                    }
-                    _tokenIncomplete = true;
-                    _numTypesValid = 0;
+                    _finishInt();
                     return (_currToken = JsonToken.VALUE_NUMBER_INT);
                 }
                 // next 3 bytes define subtype
@@ -1948,24 +1944,29 @@ public class SmileParser extends ParserBase
     /**********************************************************
      */
 
-    private final JsonToken _finishIntQuick() throws IOException
+    private final void _finishInt() throws IOException
     {
-        int value = _inputBuffer[_inputPtr++];
+        int ptr = _inputPtr;
+        if ((ptr + 5) >= _inputEnd) {
+            _finishIntSlow();
+            return;
+        }
+        int value = _inputBuffer[ptr++];
         int i;
          if (value < 0) { // 6 bits
              value &= 0x3F;
          } else {
-             i = _inputBuffer[_inputPtr++];
+             i = _inputBuffer[ptr++];
              if (i >= 0) { // 13 bits
                  value = (value << 7) + i;
-                 i = _inputBuffer[_inputPtr++];
+                 i = _inputBuffer[ptr++];
                  if (i >= 0) {
                      value = (value << 7) + i;
-                     i = _inputBuffer[_inputPtr++];
+                     i = _inputBuffer[ptr++];
                      if (i >= 0) {
                          value = (value << 7) + i;
                          // and then we must get negative
-                         i = _inputBuffer[_inputPtr++];
+                         i = _inputBuffer[ptr++];
                          if (i >= 0) {
                              _reportError("Corrupt input; 32-bit VInt extends beyond 5 data bytes");
                          }
@@ -1974,12 +1975,12 @@ public class SmileParser extends ParserBase
              }
              value = (value << 6) + (i & 0x3F);
          }
+         _inputPtr = ptr;
         _numberInt = SmileUtil.zigzagDecode(value);
         _numTypesValid = NR_INT;
-        return (_currToken = JsonToken.VALUE_NUMBER_INT);
     }
     
-    private final void _finishInt() throws IOException
+    private final void _finishIntSlow() throws IOException
     {
         if (_inputPtr >= _inputEnd) {
             loadMoreGuaranteed();
