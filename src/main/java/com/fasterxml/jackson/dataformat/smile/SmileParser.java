@@ -608,13 +608,11 @@ public class SmileParser extends ParserBase
                 // next 3 bytes define subtype
                 if (typeBits <= 6) { // VInt (zigzag), BigInteger
                     _tokenIncomplete = true;
-                    _numTypesValid = 0;
                     return (_currToken = JsonToken.VALUE_NUMBER_INT);
                 }
                 if (typeBits < 11 && typeBits != 7) { // floating-point
                     _got32BitFloat = (typeBits == 8);
                     _tokenIncomplete = true;
-                    _numTypesValid = 0;
                     return (_currToken = JsonToken.VALUE_NUMBER_FLOAT);
                 }
                 if (typeBits == 0x1A) { // == 0x3A == ':' -> possibly header signature for next chunk?
@@ -1332,10 +1330,10 @@ public class SmileParser extends ParserBase
             case 0x31:
             case 0x32:
             case 0x33:
+                if (_inputPtr >= _inputEnd) {
+                    loadMoreGuaranteed();
+                }
                 {
-                    if (_inputPtr >= _inputEnd) {
-                        loadMoreGuaranteed();
-                    }
                     int index = ((ch & 0x3) << 8) + (_inputBuffer[_inputPtr++] & 0xFF);
                     if (index >= _seenNameCount) {
                         _reportInvalidSharedName(index);
@@ -2656,21 +2654,15 @@ public class SmileParser extends ParserBase
         _reportInvalidInitial(c);
     }
 	
-    protected void _reportInvalidInitial(int mask)
-        throws JsonParseException
-    {
+    protected void _reportInvalidInitial(int mask) throws JsonParseException {
         _reportError("Invalid UTF-8 start byte 0x"+Integer.toHexString(mask));
     }
 	
-    protected void _reportInvalidOther(int mask)
-        throws JsonParseException
-    {
+    protected void _reportInvalidOther(int mask) throws JsonParseException {
         _reportError("Invalid UTF-8 middle byte 0x"+Integer.toHexString(mask));
     }
 	
-    protected void _reportInvalidOther(int mask, int ptr)
-        throws JsonParseException
-    {
+    protected void _reportInvalidOther(int mask, int ptr) throws JsonParseException {
         _inputPtr = ptr;
         _reportInvalidOther(mask);
     }
