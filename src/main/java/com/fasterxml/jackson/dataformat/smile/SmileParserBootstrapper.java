@@ -95,7 +95,14 @@ public class SmileParserBootstrapper
     	// some level of interoperability with earlier versions)
         BytesToNameCanonicalizer can = rootByteSymbols.makeChild(true, internNames);
     	// We just need a single byte, really, to know if it starts with header
-    	ensureLoaded(1);
+        int end = _inputEnd;
+        if (_inputPtr < end && _in != null) {
+        	int count = _in.read(_inputBuffer, end, _inputBuffer.length - end);
+        	if (count > 0) {
+                _inputEnd += count;
+            }
+        }
+
         SmileParser p = new SmileParser(_context, generalParserFeatures, smileFeatures,
                 codec, can, 
                 _in, _inputBuffer, _inputPtr, _inputEnd, _bufferRecyclable);
@@ -232,33 +239,5 @@ public class SmileParserBootstrapper
             }
         }
         return false;
-    }
-    
-    /*
-    /**********************************************************
-    /* Internal methods, raw input access
-    /**********************************************************
-     */
-
-    protected boolean ensureLoaded(int minimum)
-        throws IOException
-    {
-        if (_in == null) { // block source; nothing more to load
-            return false;
-        }
-
-        /* Let's assume here buffer has enough room -- this will always
-         * be true for the limited used this method gets
-         */
-        int gotten = (_inputEnd - _inputPtr);
-        while (gotten < minimum) {
-            int count = _in.read(_inputBuffer, _inputEnd, _inputBuffer.length - _inputEnd);
-            if (count < 1) {
-                return false;
-            }
-            _inputEnd += count;
-            gotten += count;
-        }
-        return true;
     }
 }
