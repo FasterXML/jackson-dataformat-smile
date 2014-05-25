@@ -91,6 +91,8 @@ public class SmileParserBootstrapper
             ObjectCodec codec, BytesToNameCanonicalizer rootByteSymbols)
         throws IOException, JsonParseException
     {
+    	// TODO: upgrade to non-deprecated method in 2.5 (but not for 2.4, to allow
+    	// some level of interoperability with earlier versions)
         BytesToNameCanonicalizer can = rootByteSymbols.makeChild(true, internNames);
     	// We just need a single byte, really, to know if it starts with header
     	ensureLoaded(1);
