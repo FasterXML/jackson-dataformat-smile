@@ -547,7 +547,7 @@ public class SmileParser extends ParserBase
     /* JsonParser impl
     /**********************************************************
      */
-
+    
     @Override
     public JsonToken nextToken() throws IOException
     {
@@ -566,13 +566,7 @@ public class SmileParser extends ParserBase
         }
         if (_inputPtr >= _inputEnd) {
             if (!loadMore()) {
-                _handleEOF();
-                /* NOTE: here we can and should close input, release buffers,
-                 * since this is "hard" EOF, not a boundary imposed by
-                 * header token.
-                 */
-                close();
-                return (_currToken = null);
+            	return _eofAsNextToken();
             }
         }
         int ch = _inputBuffer[_inputPtr++] & 0xFF;
@@ -893,9 +887,7 @@ public class SmileParser extends ParserBase
             int ptr = _inputPtr;
             if (ptr >= _inputEnd) {
                 if (!loadMore()) {
-                    _handleEOF();
-                    close();
-                    _currToken = null;
+                	_eofAsNextToken();
                     return null;
                 }
                 ptr = _inputPtr;
@@ -2666,5 +2658,19 @@ public class SmileParser extends ParserBase
         _inputPtr = ptr;
         _reportInvalidOther(mask);
     }
-}
+
+    /*
+    /**********************************************************
+    /* Internal methods, other
+    /**********************************************************
+     */
     
+    private final JsonToken _eofAsNextToken() throws IOException {
+        if (!_parsingContext.inRoot()) {
+            _handleEOF();
+        }
+        close();
+        return (_currToken = null);
+    }
+}
+
