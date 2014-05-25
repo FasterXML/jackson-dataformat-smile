@@ -254,19 +254,19 @@ public final class SmileConstants
      */
 
     /**
-     * Numeric subtype (2 LSB) for {@link #TOKEN_MISC_INTEGER},
+     * Numeric subtype (2 LSB)
      * indicating 32-bit integer (int)
      */
     public final static int TOKEN_MISC_INTEGER_32 = 0x00;
 
     /**
-     * Numeric subtype (2 LSB) for {@link #TOKEN_MISC_INTEGER},
+     * Numeric subtype (2 LSB)
      * indicating 32-bit integer (long)
      */
     public final static int TOKEN_MISC_INTEGER_64 = 0x01;
 
     /**
-     * Numeric subtype (2 LSB) for {@link #TOKEN_MISC_INTEGER},
+     * Numeric subtype (2 LSB) for
      * indicating {@link java.math.BigInteger} type.
      */
     public final static int TOKEN_MISC_INTEGER_BIG = 0x02;
@@ -274,19 +274,19 @@ public final class SmileConstants
     // Note: type 3 (0xF3) reserved for future use
     
     /**
-     * Numeric subtype (2 LSB) for {@link #TOKEN_MISC_FP},
+     * Numeric subtype (2 LSB) for
      * indicating 32-bit IEEE single precision floating point number.
      */
     public final static int TOKEN_MISC_FLOAT_32 = 0x00;
 
     /**
-     * Numeric subtype (2 LSB) for {@link #TOKEN_MISC_FP},
+     * Numeric subtype (2 LSB)
      * indicating 64-bit IEEE double precision floating point number.
      */
     public final static int TOKEN_MISC_FLOAT_64 = 0x01;
 
     /**
-     * Numeric subtype (2 LSB) for {@link #TOKEN_MISC_FP},
+     * Numeric subtype (2 LSB) for
      * indicating {@link java.math.BigDecimal} type.
      */
     public final static int TOKEN_MISC_FLOAT_BIG = 0x02;
