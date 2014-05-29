@@ -1439,14 +1439,63 @@ public class SmileGenerator
     }
 
     @Override
-    public void writeNumber(String encodedValue) throws IOException,JsonGenerationException, UnsupportedOperationException
+    public void writeNumber(String encodedValue) throws IOException
     {
-        /* 17-Apr-2010, tatu: Could try parsing etc; but for now let's not bother, it could
-         *   just be some non-standard representation that caller wants to pass
-         */
-        throw _notSupported();
+        if (encodedValue == null) {
+            writeNull();
+            return;
+        }
+        
+        // 28-May-2014, tatu: Let's actually try to support this method; should be doable
+        final int len = encodedValue.length();
+        boolean neg = encodedValue.startsWith("-");
+
+        // Let's see if it's integral or not
+        int i = neg ? 1 : 0;
+        while (true) {
+            char c = encodedValue.charAt(i);
+            if (c > '9' || c < '0') {
+                break;
+            }
+            if (++i == len) {
+                _writeIntegralNumber(encodedValue, neg);
+                return;
+            }
+        }
+        _writeDecimalNumber(encodedValue);
     }
 
+    protected void _writeIntegralNumber(String enc, boolean neg) throws IOException
+    {
+        int len = enc.length();
+        if (neg) {
+            --len;
+        }
+        // let's do approximate optimization
+        try {
+            if (len <= 9) {
+                writeNumber(Integer.parseInt(enc));
+            } else if (len <= 18) {
+                writeNumber(Long.parseLong(enc));
+            } else {
+                writeNumber(new BigInteger(enc));
+            }
+        } catch (NumberFormatException e) {
+            throw new JsonGenerationException("Invalid String representation for Number ('"+enc
+                    +"'); can not write using Smile format");
+        }
+    }
+
+    protected void _writeDecimalNumber(String enc) throws IOException
+    {
+        try {
+            writeNumber(new BigDecimal(enc));
+        } catch (NumberFormatException e) {
+            throw new JsonGenerationException("Invalid String representation for Number ('"+enc
+                    +"'); can not write using Smile format");
+        }
+    }
+    
     /*
     /**********************************************************
     /* Implementations for other methods

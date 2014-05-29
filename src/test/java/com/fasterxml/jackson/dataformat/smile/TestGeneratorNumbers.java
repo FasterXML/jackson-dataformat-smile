@@ -126,6 +126,33 @@ public class TestGeneratorNumbers
         gen.writeNumber(0.125);
         gen.close();
         assertEquals(11, out.toByteArray().length);
-    }    
+    }
 
+    // #16: Problems with 'Stringified' numbers
+    public void testNumbersAsString() throws Exception
+    {
+        ByteArrayOutputStream out;
+        SmileGenerator gen;
+
+        // first int
+        out = new ByteArrayOutputStream();
+        gen = smileGenerator(out, false);
+        gen.writeNumber("15");
+        gen.close();
+        _verifyBytes(out.toByteArray(), (byte) (0xC0 + SmileUtil.zigzagEncode(15)));
+
+        // then long. Note: cut-off to BigInteger not exact, so...
+        out = new ByteArrayOutputStream();
+        gen = smileGenerator(out, false);
+        gen.writeNumber(String.valueOf(-1L + Integer.MIN_VALUE));
+        gen.close();
+        assertEquals(6, out.toByteArray().length);
+
+        // and then just BigDecimal...
+        out = new ByteArrayOutputStream();
+        gen = smileGenerator(out, false);
+        gen.writeNumber("-50.00000000125");
+        gen.close();
+        assertEquals(10, out.toByteArray().length);
+    }
 }

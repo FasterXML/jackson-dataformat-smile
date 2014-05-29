@@ -1,7 +1,7 @@
 Project: jackson-dataformat-smile
 Version: 2.4.0 (xx-xxx-2014)
 
-No changes since 2.3.
+#16: Support handling of "Stringified" numbers
 
 ------------------------------------------------------------------------
 === History: ===
