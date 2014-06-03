@@ -17,7 +17,7 @@ To use this module on Maven-based projects, use following dependency:
 <dependency>
   <groupId>com.fasterxml.jackson.dataformat</groupId>
   <artifactId>jackson-dataformat-smile</artifactId>
-  <version>2.3.1</version>
+  <version>2.4.0</version>
 </dependency>
 ```
 
