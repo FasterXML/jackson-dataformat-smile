@@ -1530,9 +1530,6 @@ public class SmileGenerator
     @Override
     public void close() throws IOException
     {
-        /* 05-Dec-2008, tatu: To add [JACKSON-27], need to close open
-         *   scopes.
-         */
         // First: let's see that we still have buffers...
         if (_outputBuffer != null
             && isEnabled(JsonGenerator.Feature.AUTO_CLOSE_JSON_CONTENT)) {
