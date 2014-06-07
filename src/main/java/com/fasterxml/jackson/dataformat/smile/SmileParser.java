@@ -724,8 +724,7 @@ public class SmileParser extends ParserBase
            _seenStringValueCount = 0; // could also clear, but let's not yet bother
         } else {
             int newSize = (len == SmileBufferRecycler.DEFAULT_NAME_BUFFER_LENGTH) ? 256 : SmileConstants.MAX_SHARED_STRING_VALUES;
-            newShared = new String[newSize];
-            System.arraycopy(oldShared, 0, newShared, 0, oldShared.length);
+            newShared = Arrays.copyOf(oldShared, newSize);
         }
         _seenStringValues = newShared;
         _seenStringValues[_seenStringValueCount++] = newText;
@@ -753,12 +752,13 @@ public class SmileParser extends ParserBase
     {
         // Two parsing modes; can only succeed if expecting field name, so handle that first:
         if (_currToken != JsonToken.FIELD_NAME && _parsingContext.inObject()) {
-            byte[] nameBytes = str.asQuotedUTF8();
+        	byte[] nameBytes = str.asQuotedUTF8();
             final int byteLen = nameBytes.length;
             // need room for type byte, name bytes, possibly end marker, so:
             if ((_inputPtr + byteLen + 1) < _inputEnd) { // maybe...
                 int ptr = _inputPtr;
                 int ch = _inputBuffer[ptr++] & 0xFF;
+                
                 _typeAsInt = ch;
                 main_switch:
                 switch (ch >> 6) {
@@ -867,10 +867,7 @@ public class SmileParser extends ParserBase
                     break;
                 }
             }
-            // otherwise fall back to default processing:
-            JsonToken t = _handleFieldName();
-            _currToken = t;
-            return (t == JsonToken.FIELD_NAME) && str.getValue().equals(_parsingContext.getCurrentName());
+            // wouldn't fit in buffer, just fall back to default processing
         }
         // otherwise just fall back to default handling; should occur rarely
         return (nextToken() == JsonToken.FIELD_NAME) && str.getValue().equals(getCurrentName());
@@ -1427,8 +1424,7 @@ public class SmileParser extends ParserBase
       	   _seenNameCount = 0; // could also clear, but let's not yet bother
         } else {
             int newSize = (len == SmileBufferRecycler.DEFAULT_STRING_VALUE_BUFFER_LENGTH) ? 256 : SmileConstants.MAX_SHARED_NAMES;
-            newShared = new String[newSize];
-            System.arraycopy(oldShared, 0, newShared, 0, oldShared.length);
+            newShared = Arrays.copyOf(oldShared, newSize);
         }
         return newShared;
     }
@@ -1810,12 +1806,11 @@ public class SmileParser extends ParserBase
     }
     
     private static int[] _growArrayTo(int[] arr, int minSize) {
-        int[] newArray = new int[minSize + 4];
-        if (arr != null) {
-            // !!! TODO: JDK 1.6, Arrays.copyOf
-            System.arraycopy(arr, 0, newArray, 0, arr.length);
-        }
-        return newArray;
+    	final int size = minSize+4;
+    	if (arr == null) {
+    		return new int[size];
+    	}
+    	return Arrays.copyOf(arr, size);
     }
     
     /*

@@ -9,7 +9,7 @@ import com.fasterxml.jackson.databind.*;
  * using more sizable (500k of JSON, 200k of Smile) dataset.
  * Should tease out at least some of boundary conditions.
  */
-public class TestBiggerData extends SmileTestBase
+public class ParserBiggerDataTest extends SmileTestBase
 {
 	static class Citm
 	{
