@@ -1,11 +1,15 @@
 Project: jackson-dataformat-smile
-Version: 2.2.3 (22-Aug-2013)
+Version: 2.2.4 (10-Jun-2014)
 
-#12: Add LICENSE, NOTICE in artifacts
+No functional changes.
 
 ------------------------------------------------------------------------
 === History: ===
 ------------------------------------------------------------------------
+
+2.2.3 (22-Aug-2013)
+
+#12: Add LICENSE, NOTICE in artifacts
 
 2.2.2 (27-May-2013)
 
