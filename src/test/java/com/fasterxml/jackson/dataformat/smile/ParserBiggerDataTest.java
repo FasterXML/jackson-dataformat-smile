@@ -88,7 +88,7 @@ public class ParserBiggerDataTest extends SmileTestBase
 		ObjectMapper smiler = smileMapper(false);
 		byte[] smile = smiler.writeValueAsBytes(citm0);
 
-		Citm citm = smiler.readValue(smile, Citm.class);
+		Citm citm = smiler.readValue(new ByteArrayInputStream(smile), Citm.class);
 		
 		assertNotNull(citm);
 		assertNotNull(citm.areaNames);
@@ -117,7 +117,7 @@ public class ParserBiggerDataTest extends SmileTestBase
 		ObjectMapper smiler = smileMapper(false);
 		byte[] smile = smiler.writeValueAsBytes(citm0);
 
-		Citm citm = smiler.readValue(smile, Citm.class);
+		Citm citm = smiler.readValue(new ByteArrayInputStream(smile), Citm.class);
 
 		ObjectMapper mapper = smileMapper(false);
 		
