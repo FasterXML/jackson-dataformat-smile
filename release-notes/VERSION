@@ -1,11 +1,16 @@
 Project: jackson-dataformat-smile
-Version: 2.4.0 (02-Jun-2014)
+Version: 2.4.1 (xx-Jun-2014)
 
-#16: Support handling of "Stringified" numbers
+#17: Boundary error with `float`/`double` values, large content
+ (reported by brharrington@github)
 
 ------------------------------------------------------------------------
 === History: ===
 ------------------------------------------------------------------------
+
+2.4.0 (02-Jun-2014)
+
+#16: Support handling of "Stringified" numbers
 
 2.3.2 (01-Mar-2014)
 

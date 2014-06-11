@@ -84,7 +84,7 @@ abstract class SmileTestBase
     }
     
     protected ObjectMapper smileMapper(boolean requireHeader) {
-        return smileMapper(requireHeader, false, false);
+        return smileMapper(requireHeader, requireHeader, false);
     }
     
     protected ObjectMapper smileMapper(boolean requireHeader,

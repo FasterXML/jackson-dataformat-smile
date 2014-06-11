@@ -2055,6 +2055,9 @@ public class SmileParser extends ParserBase
 
     private final int _fourBytesToIntSlow()  throws IOException
     {
+        if (_inputPtr >= _inputEnd) {
+            loadMoreGuaranteed();
+        }
         int i = _inputBuffer[_inputPtr++]; // first 7 bits
         if (_inputPtr >= _inputEnd) {
             loadMoreGuaranteed();

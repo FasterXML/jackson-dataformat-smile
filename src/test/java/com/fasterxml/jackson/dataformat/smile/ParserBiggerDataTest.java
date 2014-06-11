@@ -1,5 +1,6 @@
 package com.fasterxml.jackson.dataformat.smile;
 
+import java.io.*;
 import java.util.*;
 
 import com.fasterxml.jackson.databind.*;
@@ -121,7 +122,8 @@ public class ParserBiggerDataTest extends SmileTestBase
 		ObjectMapper mapper = smileMapper(false);
 		
 		byte[] smile1 = mapper.writeValueAsBytes(citm);
-		Citm citm2 = mapper.readValue(smile1, Citm.class);
+		// IMPORTANT: use InputStream so boundary conditions are actually checked
+		Citm citm2 = mapper.readValue(new ByteArrayInputStream(smile1), Citm.class);
 		byte[] smile2 = mapper.writeValueAsBytes(citm2);
 
 		assertEquals(smile1.length, smile2.length);
@@ -138,4 +140,34 @@ public class ParserBiggerDataTest extends SmileTestBase
 		assertEquals(citm.topicSubTopics.size(), citm2.topicSubTopics.size());
 		assertEquals(citm.venueNames.size(), citm2.venueNames.size());
 	}
+
+	  public void testIssue17BoundaryWithFloat() throws Exception
+	  {
+	      _testWithFloats(false);
+           _testWithFloats(true);
+	  }
+
+	  private void _testWithFloats(boolean useHeader) throws Exception
+	  {
+           double[] data = new double[4096];
+           for (int i = 0; i < data.length; ++i) {
+               data[i] = (double) i;
+           }
+	      ObjectMapper mapper = smileMapper(useHeader);
+	      byte[] encoded = mapper.writeValueAsBytes(data);
+
+           // first, read from byte array; no boundary
+	      double[] decoded = mapper.readValue(encoded, double[].class);
+	      assertEquals(data.length, decoded.length);
+	      
+	      // and then via InputStream
+	      decoded = mapper.readValue(new ByteArrayInputStream(encoded), double[].class); // This fails on 2.4.0
+           assertEquals(data.length, decoded.length);
+
+           for (int i = 0; i < data.length; ++i) {
+               if (data[i] != decoded[i]) {
+                   assertEquals("Different value at #"+i, data[i], decoded[i]);
+               }
+           }
+	  }
 }

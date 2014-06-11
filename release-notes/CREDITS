@@ -5,7 +5,10 @@ Here are people who have contributed to Smile decoded plug-in development
 Tatu Saloranta, tatu.saloranta@iki.fi: author
 
 Steven Schlansker:
-
   * Reported [Issue-2]: SmileParser failed to properly decoded surrogate-pair
     characters for long strings
    (2.0.2)
+
+brharrington@github:
+  * Reported #17: Boundary error with `float`/`double` values, large content
+   (2.4.1)
