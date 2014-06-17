@@ -240,7 +240,7 @@ public class SmileGenerator
      * write can be output using back reference or not.
      */
     protected SharedStringNode[] _seenNames;
-    
+
     /**
      * Number of entries in {@link #_seenNames}; -1 if no shared name
      * detection is enabled
@@ -252,7 +252,7 @@ public class SmileGenerator
      * write can be output using back reference or not.
      */
     protected SharedStringNode[] _seenStringValues;
-    
+
     /**
      * Number of entries in {@link #_seenStringValues}; -1 if no shared text value
      * detection is enabled
