@@ -1,6 +1,6 @@
 package com.fasterxml.jackson.dataformat.smile;
 
-import java.io.ByteArrayOutputStream;
+import java.io.*;
 
 import com.fasterxml.jackson.core.*;
 
@@ -198,7 +198,6 @@ public class TestGeneratorSymbols extends SmileTestBase
     /**********************************************************
      */
     
-    // For issue [JACKSON-552]
     public void _testLongNames(boolean shareNames) throws Exception
     {
         // 68 bytes long (on boundary)
