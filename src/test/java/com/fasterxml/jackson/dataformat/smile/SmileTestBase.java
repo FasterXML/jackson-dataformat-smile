@@ -14,7 +14,7 @@ import com.fasterxml.jackson.dataformat.smile.SmileFactory;
 import com.fasterxml.jackson.dataformat.smile.SmileGenerator;
 import com.fasterxml.jackson.dataformat.smile.SmileParser;
 
-abstract class SmileTestBase
+public abstract class SmileTestBase
     extends junit.framework.TestCase
 {
     // From JSON specification, sample doc...
@@ -84,7 +84,7 @@ abstract class SmileTestBase
     }
     
     protected ObjectMapper smileMapper(boolean requireHeader) {
-        return smileMapper(requireHeader, false, false);
+        return smileMapper(requireHeader, requireHeader, false);
     }
     
     protected ObjectMapper smileMapper(boolean requireHeader,
@@ -105,7 +105,7 @@ abstract class SmileTestBase
     
     protected byte[] _smileDoc(String json) throws IOException
     {
-    	return _smileDoc(json, true);
+        return _smileDoc(json, true);
     }
 
     protected byte[] _smileDoc(String json, boolean writeHeader) throws IOException
@@ -116,16 +116,16 @@ abstract class SmileTestBase
     protected byte[] _smileDoc(SmileFactory smileFactory, String json, boolean writeHeader) throws IOException
     {
         JsonFactory jf = new JsonFactory();
-    	JsonParser jp = jf.createParser(json);
-    	ByteArrayOutputStream out = new ByteArrayOutputStream();
-    	JsonGenerator jg = smileGenerator(out, writeHeader);
+        JsonParser jp = jf.createParser(json);
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        JsonGenerator jg = smileGenerator(out, writeHeader);
     	
-    	while (jp.nextToken() != null) {
-    	    jg.copyCurrentEvent(jp);
-    	}
-    	jp.close();
-    	jg.close();
-    	return out.toByteArray();
+        while (jp.nextToken() != null) {
+        	jg.copyCurrentEvent(jp);
+        }
+        jp.close();
+        jg.close();
+        return out.toByteArray();
     }
 
     protected SmileGenerator smileGenerator(ByteArrayOutputStream result, boolean addHeader)

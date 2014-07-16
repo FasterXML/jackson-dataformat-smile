@@ -2219,9 +2219,12 @@ public class SmileGenerator
             }
         }
         // other than that, just slap it there
-        int ix = name.hashCode() & (_seenNames.length-1);
-        _seenNames[ix] = new SharedStringNode(name, _seenNameCount, _seenNames[ix]);
-        ++_seenNameCount;
+        int ref = _seenNameCount;
+        if (_validBackRef(ref)) {
+            int ix = name.hashCode() & (_seenNames.length-1);
+            _seenNames[ix] = new SharedStringNode(name, ref, _seenNames[ix]);
+        }
+        _seenNameCount = ref+1;
     }
 
     private final int _findSeenStringValue(String text)
@@ -2273,9 +2276,28 @@ public class SmileGenerator
             }
         }
         // other than that, just slap it there
-        int ix = text.hashCode() & (_seenStringValues.length-1);
-        _seenStringValues[ix] = new SharedStringNode(text, _seenStringValueCount, _seenStringValues[ix]);
-        ++_seenStringValueCount;
+        /* [Issue#18]: Except need to avoid producing bytes 0xFE and 0xFF in content;
+         *  so skip additions of those; this may produce duplicate values (and lower
+         *  efficiency), but it must be done to since these bytes must be avoided by
+         *  encoder, as per specification (except for native byte content, or as explicit
+         *  end markers). Avoiding nulls is sort of
+         */
+        int ref = _seenStringValueCount;
+        if (_validBackRef(ref)) {
+            int ix = text.hashCode() & (_seenStringValues.length-1);
+            _seenStringValues[ix] = new SharedStringNode(text, ref, _seenStringValues[ix]);
+        }
+        _seenStringValueCount = ref+1;
+    }
+
+    /**
+     * Helper method used to ensure that we do not use back-reference values
+     * that would produce illegal byte sequences (ones with byte 0xFE or 0xFF).
+     * Note that we do not try to avoid null byte (0x00) by default, although
+     * it would be technically possible as well.
+     */
+    private final static boolean _validBackRef(int index) {
+        return (index & 0xFF) < 0xFE;
     }
     
     /*
