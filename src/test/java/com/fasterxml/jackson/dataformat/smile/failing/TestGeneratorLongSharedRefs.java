@@ -9,12 +9,12 @@ import com.fasterxml.jackson.dataformat.smile.*;
 public class TestGeneratorLongSharedRefs extends SmileTestBase
 {
     // [Issue#18]: problems encoding long shared-string references
-    public void testIssue18EndOfDocByte() throws Exception
+    public void testIssue18EndOfDocByteViaFields() throws Exception
     {
         ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
 
         // boolean requireHeader, boolean writeHeader, boolean writeEndMarker
-        final SmileFactory f = this.smileFactory(false, true, false);
+        final SmileFactory f = smileFactory(false, true, false);
         
         SmileGenerator generator =  f.createGenerator(byteOut);
         generator.writeStartObject();
@@ -74,11 +74,62 @@ public class TestGeneratorLongSharedRefs extends SmileTestBase
         
         for (int i = 0, end = smile.length; i < end; ++i) {
             int ch = smile[i] & 0xFF;
-            
-            if (ch == 0) {
-                fail("Unexpected null byte at #"+i+" (of "+end+")");
-            } else if (ch == 0xFF) {
-                fail("Unexpected 0xFF byte at #"+i+" (of "+end+")");
+
+            if (ch >= 0xFE) {
+                fail("Unexpected 0x"+Integer.toHexString(ch)+" byte at #"+i+" (of "+end+")");
+                
+            }
+        }
+    }
+
+    public void testIssue18EndOfDocByteViaStringValues() throws Exception
+    {
+        ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
+
+        // boolean requireHeader, boolean writeHeader, boolean writeEndMarker
+        final SmileFactory f = smileFactory(false, true, false);
+        f.enable(SmileGenerator.Feature.CHECK_SHARED_STRING_VALUES);
+        
+        SmileGenerator generator =  f.createGenerator(byteOut);
+        generator.writeStartArray();
+
+        final int VALUE_COUNT = 300;
+
+        for (int i=0; i < VALUE_COUNT; i++) {
+            generator.writeString("f_"+i);
+            generator.flush();
+        }
+        for (int i=0; i < VALUE_COUNT; i++) {
+            generator.writeString("f_"+i);
+            generator.flush();
+        }
+        generator.writeEndArray();
+        generator.close();
+
+        byte[] smile = byteOut.toByteArray();
+
+        // then read it back; make sure to use InputStream to exercise block boundaries
+        SmileParser p = f.createParser(new ByteArrayInputStream(smile));
+        assertToken(p.nextToken(), JsonToken.START_ARRAY);
+        for (int i=0; i < VALUE_COUNT; i++) {
+            assertToken(p.nextToken(), JsonToken.VALUE_STRING);
+            assertEquals("f_"+i, p.getText());
+        }
+        for (int i=0; i < VALUE_COUNT; i++) {
+            assertToken(p.nextToken(), JsonToken.VALUE_STRING);
+            assertEquals("f_"+i, p.getText());
+        }
+        assertToken(p.nextToken(), JsonToken.END_ARRAY);
+        assertNull(p.nextToken());
+        p.close();
+
+        // One more thing: verify we don't see the end marker or null anywhere
+        
+        for (int i = 0, end = smile.length; i < end; ++i) {
+            int ch = smile[i] & 0xFF;
+
+            if (ch >= 0xFE) {
+                fail("Unexpected 0x"+Integer.toHexString(ch)+" byte at #"+i+" (of "+end+")");
                 
             }
         }
