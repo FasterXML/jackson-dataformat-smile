@@ -1,5 +1,5 @@
 Project: jackson-dataformat-smile
-Version: 2.3.4 (xx-xxx-2014)
+Version: 2.3.4 (17-Jul-2014)
 
 #18: Shared keys can cause unescaped write of BYTE_MARKER_END_OF_CONTENT
  (reported by Boaz L, bleskes@github)
