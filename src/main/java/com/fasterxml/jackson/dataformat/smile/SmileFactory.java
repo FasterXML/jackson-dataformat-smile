@@ -366,9 +366,8 @@ public class SmileFactory extends JsonFactory
     protected SmileParser _createParser(InputStream in, IOContext ctxt) throws IOException
     {
     	SmileParserBootstrapper bs = new SmileParserBootstrapper(ctxt, in);
-    	return bs.constructParser(_parserFeatures,
-        		_smileParserFeatures, isEnabled(JsonFactory.Feature.INTERN_FIELD_NAMES),
-        		_objectCodec, _rootByteSymbols);
+    	return bs.constructParser(_factoryFeatures, _parserFeatures,
+        		_smileParserFeatures, _objectCodec, _rootByteSymbols);
     }
 
     @Override
@@ -394,8 +393,7 @@ public class SmileFactory extends JsonFactory
     protected SmileParser _createParser(byte[] data, int offset, int len, IOContext ctxt) throws IOException
     {
         return new SmileParserBootstrapper(ctxt, data, offset, len).constructParser(
-                _parserFeatures, _smileParserFeatures,
-                isEnabled(JsonFactory.Feature.INTERN_FIELD_NAMES),
+                _factoryFeatures, _parserFeatures, _smileParserFeatures,
                 _objectCodec, _rootByteSymbols);
     }
 

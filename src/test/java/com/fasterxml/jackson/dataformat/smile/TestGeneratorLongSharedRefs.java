@@ -4,8 +4,6 @@ import java.io.*;
 
 import com.fasterxml.jackson.core.*;
 
-import com.fasterxml.jackson.dataformat.smile.*;
-
 public class TestGeneratorLongSharedRefs extends SmileTestBase
 {
     // [Issue#18]: problems encoding long shared-string references

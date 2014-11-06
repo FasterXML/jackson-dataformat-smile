@@ -86,15 +86,13 @@ public class SmileParserBootstrapper
         _bufferRecyclable = false;
     }
 
-    public SmileParser constructParser(int generalParserFeatures, int smileFeatures,
-            boolean internNames,
+    public SmileParser constructParser(int factoryFeatures,
+            int generalParserFeatures, int smileFeatures,
             ObjectCodec codec, BytesToNameCanonicalizer rootByteSymbols)
         throws IOException, JsonParseException
     {
-    	// TODO: upgrade to non-deprecated method in 2.5 (but not for 2.4, to allow
-    	// some level of interoperability with earlier versions)
-        BytesToNameCanonicalizer can = rootByteSymbols.makeChild(true, internNames);
-    	// We just need a single byte, really, to know if it starts with header
+        BytesToNameCanonicalizer can = rootByteSymbols.makeChild(factoryFeatures);
+        // We just need a single byte, really, to know if it starts with header
         int end = _inputEnd;
         if (_inputPtr < end && _in != null) {
         	int count = _in.read(_inputBuffer, end, _inputBuffer.length - end);
