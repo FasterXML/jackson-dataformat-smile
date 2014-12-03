@@ -54,9 +54,9 @@ public class SmileGenerator
         /**
          * Whether to use simple 7-bit per byte encoding for binary content when output.
          * This is necessary ensure that byte 0xFF will never be included in content output.
-         * For other data types this limitation is handled automatically; but since overhead
-         * for binary data (14% size expansion, processing overhead) is non-negligible,
-         * it is not enabled by default. If no binary data is output, feature has no effect.
+         * For other data types this limitation is handled automatically. This setting is enabled
+         * by default, however, overhead for binary data (14% size expansion, processing overhead)
+         * is non-negligible. If no binary data is output, feature has no effect.
          *<p>
          * Default setting is true, indicating that binary data is quoted as 7-bit bytes
          * instead of written raw.
