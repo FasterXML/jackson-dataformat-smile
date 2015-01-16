@@ -373,16 +373,18 @@ public class SmileParser extends ParserBase
     protected final boolean loadMore()
         throws IOException
     {
-        _currInputProcessed += _inputEnd;
         //_currInputRowStart -= _inputEnd;
         
         if (_inputStream != null) {
             int count = _inputStream.read(_inputBuffer, 0, _inputBuffer.length);
+            _currInputProcessed += _inputEnd;
+            _inputPtr = 0;
             if (count > 0) {
-                _inputPtr = 0;
                 _inputEnd = count;
                 return true;
             }
+            // important: move pointer to same as end, to keep location accurate
+            _inputEnd = 0;
             // End of input
             _closeInput();
             // Should never return 0, so let's fail
@@ -406,8 +408,8 @@ public class SmileParser extends ParserBase
         }
         // Need to move remaining data in front?
         int amount = _inputEnd - _inputPtr;
+        _currInputProcessed += _inputPtr;
         if (amount > 0 && _inputPtr > 0) {
-            _currInputProcessed += _inputPtr;
             //_currInputRowStart -= _inputPtr;
             System.arraycopy(_inputBuffer, _inputPtr, _inputBuffer, 0, amount);
             _inputEnd = amount;

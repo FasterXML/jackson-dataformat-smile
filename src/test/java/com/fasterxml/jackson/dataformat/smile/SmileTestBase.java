@@ -3,13 +3,13 @@ package com.fasterxml.jackson.dataformat.smile;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Arrays;
 
 import org.junit.Assert;
 
 import com.fasterxml.jackson.core.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import com.fasterxml.jackson.dataformat.smile.SmileFactory;
 import com.fasterxml.jackson.dataformat.smile.SmileGenerator;
 import com.fasterxml.jackson.dataformat.smile.SmileParser;
@@ -128,14 +128,14 @@ public abstract class SmileTestBase
     	    return out.toByteArray();
     }
 
-    protected SmileGenerator smileGenerator(ByteArrayOutputStream result, boolean addHeader)
+    protected SmileGenerator smileGenerator(OutputStream result, boolean addHeader)
         throws IOException
     {
         return smileGenerator(new SmileFactory(), result, addHeader);
     }
 
     protected SmileGenerator smileGenerator(SmileFactory f,
-            ByteArrayOutputStream result, boolean addHeader)
+            OutputStream result, boolean addHeader)
         throws IOException
     {
         f.configure(SmileGenerator.Feature.WRITE_HEADER, addHeader);

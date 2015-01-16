@@ -1,6 +1,6 @@
 package com.fasterxml.jackson.dataformat.smile;
 
-import java.io.IOException;
+import java.io.*;
 
 import com.fasterxml.jackson.core.*;
 
@@ -55,6 +55,42 @@ public class TestParserLocation
         assertEquals(11, p.getTokenLocation().getByteOffset());
 
         assertNull(p.nextToken());
+        p.close();
+    }
+
+    // for [databind-smile#24]
+    public void testAscendingOffsets() throws Exception
+    {
+        // need to create big enough document, say at least 64k
+        // but as importantly, try to create buffer boundaries by using 6-char (7-byte) ASCII strings
+        final int COUNT = 57000;
+        final int SIZE = COUNT * 7;
+        
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream(COUNT + 10);
+        SmileGenerator gen = smileGenerator(bytes, true);
+        gen.disable(SmileGenerator.Feature.CHECK_SHARED_STRING_VALUES);
+        gen.writeStartArray();
+        for (int i = 0; i < COUNT; ++i) {
+            gen.writeString("abc123");
+        }
+        gen.writeEndArray();
+        gen.close();
+        byte[] b = bytes.toByteArray();
+        assertEquals(4 + 2 + SIZE, b.length);
+
+        SmileParser p = _smileParser(new ByteArrayInputStream(b));
+        assertToken(JsonToken.START_ARRAY, p.nextToken());
+        // 4 byte header, start array read, so 4 bytes down:
+        assertEquals(5, p.getCurrentLocation().getByteOffset());
+        for (int i = 0; i < COUNT; ++i) {
+            assertToken(JsonToken.VALUE_STRING, p.nextToken());
+            assertEquals(6 + i*7, p.getCurrentLocation().getByteOffset());
+            assertEquals("abc123", p.getText());
+        }
+        assertToken(JsonToken.END_ARRAY, p.nextToken());
+        assertEquals(SIZE+6, p.getCurrentLocation().getByteOffset());
+        assertNull(p.nextToken());
+        assertEquals(SIZE+6, p.getCurrentLocation().getByteOffset());
         p.close();
     }
 }
