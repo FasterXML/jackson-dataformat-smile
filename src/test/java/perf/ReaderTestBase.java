@@ -53,9 +53,9 @@ abstract class ReaderTestBase
         System.out.print("Warming up");
 
         final ObjectReader jsonReader = mapper1.reader()
-                .withType(inputClass1);
+                .forType(inputClass1);
         final ObjectReader arrayReader = mapper2.reader()
-                .withType(inputClass2);
+                .forType(inputClass2);
         
         int i = 0;
         final int TYPES = 2;
