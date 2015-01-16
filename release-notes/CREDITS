@@ -12,3 +12,8 @@ Steven Schlansker:
 brharrington@github:
   * Reported #17: Boundary error with `float`/`double` values, large content
    (2.4.1)
+
+
+mcmahon356@github:
+  * Reported 24: Current location does not always updated properly
+   (2.5.1)
