@@ -158,15 +158,10 @@ public class SmileGenerator
     protected final static byte TOKEN_BYTE_FLOAT_32 =  (byte) (SmileConstants.TOKEN_PREFIX_FP | TOKEN_MISC_FLOAT_32);
     protected final static byte TOKEN_BYTE_FLOAT_64 =  (byte) (SmileConstants.TOKEN_PREFIX_FP | TOKEN_MISC_FLOAT_64);
     protected final static byte TOKEN_BYTE_BIG_DECIMAL =  (byte) (SmileConstants.TOKEN_PREFIX_FP | TOKEN_MISC_FLOAT_BIG);
-    
-    protected final static int SURR1_FIRST = 0xD800;
-    protected final static int SURR1_LAST = 0xDBFF;
-    protected final static int SURR2_FIRST = 0xDC00;
-    protected final static int SURR2_LAST = 0xDFFF;
 
     protected final static long MIN_INT_AS_LONG = (long) Integer.MIN_VALUE;
     protected final static long MAX_INT_AS_LONG = (long) Integer.MAX_VALUE;
-    
+
     /*
     /**********************************************************
     /* Configuration

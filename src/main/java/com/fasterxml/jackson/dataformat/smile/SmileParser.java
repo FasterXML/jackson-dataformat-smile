@@ -578,7 +578,6 @@ public class SmileParser extends ParserBase
             if (ch != 0) { // 0x0 is invalid
                 return _handleSharedString(ch-1);
             }
-//            _reportError("Invalid token byte 0x00");
             break;
 
         case 1: // simple literals, numbers
@@ -745,16 +744,35 @@ public class SmileParser extends ParserBase
 
     /*
     /**********************************************************
-    /* Public API, traversal, nextXxxValue/nextFieldName
+    /* Optimized accessors, isXxx, nextXxx (except for nextToken()
     /**********************************************************
      */
 
+    // Not (yet?) overridden, as of 2.6
+    /*
+    public boolean hasTokenId(int id) {
+        return super.hasTokenId(id);
+    }
+    */
+
+    //public boolean isExpectedStartArrayToken() { return getCurrentToken() == JsonToken.START_ARRAY; }
+
+    //public boolean isExpectedStartObjectToken() { return getCurrentToken() == JsonToken.START_OBJECT; }
+    
     @Override
     public boolean nextFieldName(SerializableString str) throws IOException
     {
         // Two parsing modes; can only succeed if expecting field name, so handle that first:
         if (_currToken != JsonToken.FIELD_NAME && _parsingContext.inObject()) {
-        	byte[] nameBytes = str.asQuotedUTF8();
+            // first, clear up state
+            _numTypesValid = NR_UNKNOWN;
+            if (_tokenIncomplete) {
+                _skipIncomplete();
+            }
+            _tokenOffsetForTotal = _inputPtr;
+            _binaryValue = null;
+
+            byte[] nameBytes = str.asQuotedUTF8();
             final int byteLen = nameBytes.length;
             // need room for type byte, name bytes, possibly end marker, so:
             if ((_inputPtr + byteLen + 1) < _inputEnd) { // maybe...
@@ -873,6 +891,132 @@ public class SmileParser extends ParserBase
         }
         // otherwise just fall back to default handling; should occur rarely
         return (nextToken() == JsonToken.FIELD_NAME) && str.getValue().equals(getCurrentName());
+    }
+
+    @Override
+    public String nextFieldName() throws IOException
+    {
+        // Two parsing modes; can only succeed if expecting field name, so handle that first:
+        if (_currToken != JsonToken.FIELD_NAME && _parsingContext.inObject()) {
+            // first, clear up state
+            _numTypesValid = NR_UNKNOWN;
+            if (_tokenIncomplete) {
+                _skipIncomplete();
+            }
+            _tokenOffsetForTotal = _inputPtr;
+            _binaryValue = null;
+
+            if (_inputPtr >= _inputEnd) {
+                loadMoreGuaranteed();
+            }
+            int ch = _inputBuffer[_inputPtr++] & 0xFF;
+            // is this needed?
+            _typeAsInt = ch;
+            switch (ch >> 6) {
+            case 0: // misc, including end marker
+                switch (ch) {
+                case 0x20: // empty String as name, legal if unusual
+                    _parsingContext.setCurrentName("");
+                    return "";
+                case 0x30: // long shared
+                case 0x31:
+                case 0x32:
+                case 0x33:
+                    if (_inputPtr >= _inputEnd) {
+                        loadMoreGuaranteed();
+                    }
+                    {
+                        int index = ((ch & 0x3) << 8) + (_inputBuffer[_inputPtr++] & 0xFF);
+                        if (index >= _seenNameCount) {
+                            _reportInvalidSharedName(index);
+                        }
+                        String name = _seenNames[index];
+                        _parsingContext.setCurrentName(name);
+                        _currToken = JsonToken.FIELD_NAME;
+                        return name;
+                    }
+                case 0x34: // long ASCII/Unicode name
+                    _handleLongFieldName();
+                    return getCurrentName();
+                }
+                break;
+            case 1: // short shared, can fully process
+                {
+                    int index = (ch & 0x3F);
+                    if (index >= _seenNameCount) {
+                        _reportInvalidSharedName(index);
+                    }
+                    String name = _seenNames[index];
+                    _parsingContext.setCurrentName(name);
+                    _currToken = JsonToken.FIELD_NAME;
+                    return name;
+                }
+            case 2: // short ASCII
+                {
+                    int len = 1 + (ch & 0x3f);
+                    String name;
+                    Name n = _findDecodedFromSymbols(len);
+                    if (n != null) {
+                        name = n.getName();
+                        _inputPtr += len;
+                    } else {
+                        name = _decodeShortAsciiName(len);
+                        name = _addDecodedToSymbols(len, name);
+                    }
+                    if (_seenNames != null) {
+                        if (_seenNameCount >= _seenNames.length) {
+                            _seenNames = _expandSeenNames(_seenNames);
+                        }
+                        _seenNames[_seenNameCount++] = name;
+                    }
+                    _parsingContext.setCurrentName(name);
+                    _currToken = JsonToken.FIELD_NAME;
+                    return name;
+                }
+            case 3: // short Unicode
+                // all valid, except for 0xFF
+                ch &= 0x3F;
+                {
+                    if (ch > 0x37) {
+                        if (ch == 0x3B) {
+                            if (!_parsingContext.inObject()) {
+                                _reportMismatchedEndMarker('}', ']');
+                            }
+                            _parsingContext = _parsingContext.getParent();
+                            _currToken = JsonToken.END_OBJECT;
+                            return null;
+                        }
+                    } else {
+                        final int len = ch + 2; // values from 2 to 57...
+                        String name;
+                        Name n = _findDecodedFromSymbols(len);
+                        if (n != null) {
+                            name = n.getName();
+                            _inputPtr += len;
+                        } else {
+                            name = _decodeShortUnicodeName(len);
+                            name = _addDecodedToSymbols(len, name);
+                        }
+                        if (_seenNames != null) {
+                            if (_seenNameCount >= _seenNames.length) {
+                             _seenNames = _expandSeenNames(_seenNames);
+                            }
+                            _seenNames[_seenNameCount++] = name;
+                        }
+                        _parsingContext.setCurrentName(name);
+                        _currToken = JsonToken.FIELD_NAME;
+                        return name;
+                    }
+                }
+                break;
+            }
+            // Other byte values are illegal
+            _reportError("Invalid type marker byte 0x"+Integer.toHexString(_typeAsInt)+" for expected field name (or END_OBJECT marker)");
+            return null;
+        }
+        
+        // otherwise just fall back to default handling; should occur rarely
+        return (nextToken() == JsonToken.FIELD_NAME) ? getCurrentName() : null;
     }
 
     @Override
