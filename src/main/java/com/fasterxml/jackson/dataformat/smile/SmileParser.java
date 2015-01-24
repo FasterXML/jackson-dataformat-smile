@@ -1621,10 +1621,8 @@ public class SmileParser extends ParserBase
         for (int inEnd = inPtr + len; inPtr < inEnd; ++inPtr) {
             outBuf[outPtr++] = (char) inBuf[inPtr];
         }
-        
         _inputPtr = inPtr;
-        _textBuffer.setCurrentLength(len);
-        return _textBuffer.contentsAsString();
+        return _textBuffer.setCurrentAndReturn(len);
     }
     
     /**
@@ -1673,8 +1671,7 @@ public class SmileParser extends ParserBase
             }
             outBuf[outPtr++] = (char) i;
         }
-        _textBuffer.setCurrentLength(outPtr);
-        return _textBuffer.contentsAsString();
+        return _textBuffer.setCurrentAndReturn(outPtr);
     }
 
     // note: slightly edited copy of UTF8StreamParser.addName()
@@ -2354,8 +2351,7 @@ public class SmileParser extends ParserBase
             outBuf[outPtr++] = (char) inBuf[inPtr];            
         }
         _inputPtr = inPtr;
-        _textBuffer.setCurrentLength(len);
-        return _textBuffer.contentsAsString();
+        return _textBuffer.setCurrentAndReturn(len);
     }
 
     protected final String _decodeShortUnicodeValue(int len) throws IOException
@@ -2399,8 +2395,7 @@ public class SmileParser extends ParserBase
             }
             outBuf[outPtr++] = (char) i;
         }        
-        _textBuffer.setCurrentLength(outPtr);
-        return _textBuffer.contentsAsString();
+        return _textBuffer.setCurrentAndReturn(outPtr);
     }
 
     private final void _decodeLongAscii() throws IOException
