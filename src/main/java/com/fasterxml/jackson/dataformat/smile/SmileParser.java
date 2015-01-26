@@ -1166,7 +1166,7 @@ public class SmileParser extends ParserBase
             return null;
         }
     }
-    
+
     /*
     /**********************************************************
     /* Public API, access to token information, text
@@ -1271,18 +1271,31 @@ public class SmileParser extends ParserBase
     }
 
     @Override
-    public int getTextOffset() throws IOException
-    {
+    public int getTextOffset() throws IOException {
         return 0;
     }
 
     @Override
     public String getValueAsString() throws IOException
     {
-        if (_currToken != JsonToken.VALUE_STRING) {
-            if (_currToken == null || _currToken == JsonToken.VALUE_NULL || !_currToken.isScalarValue()) {
-                return null;
+        // inlined 'getText()' for common case of having String
+        if (_tokenIncomplete) {
+            _tokenIncomplete = false;
+            int tb = _typeAsInt;
+            int type = (tb >> 5);
+            if (type == 2 || type == 3) { // tiny & short ASCII
+                return _decodeShortAsciiValue(1 + (tb & 0x3F));
             }
+            if (type == 4 || type == 5) { // tiny & short Unicode
+                return _decodeShortUnicodeValue(2 + (tb & 0x3F));
+            }
+            _finishToken();
+        }
+        if (_currToken == JsonToken.VALUE_STRING) {
+            return _textBuffer.contentsAsString();
+        }
+        if (_currToken == null || _currToken == JsonToken.VALUE_NULL || !_currToken.isScalarValue()) {
+            return null;
         }
         return getText();
     }
@@ -1297,7 +1310,7 @@ public class SmileParser extends ParserBase
         }
         return getText();
     }
-    
+
     /*
     /**********************************************************
     /* Public API, access to token information, binary
@@ -1305,8 +1318,7 @@ public class SmileParser extends ParserBase
      */
 
     @Override
-    public byte[] getBinaryValue(Base64Variant b64variant)
-        throws IOException
+    public byte[] getBinaryValue(Base64Variant b64variant) throws IOException
     {
         if (_tokenIncomplete) {
             _finishToken();
@@ -1319,8 +1331,7 @@ public class SmileParser extends ParserBase
     }
 
     @Override
-    public Object getEmbeddedObject()
-        throws IOException
+    public Object getEmbeddedObject() throws IOException
     {
         if (_tokenIncomplete) {
             _finishToken();
@@ -1332,8 +1343,7 @@ public class SmileParser extends ParserBase
     }
 
     @Override
-    public int readBinaryValue(Base64Variant b64variant, OutputStream out)
-        throws IOException
+    public int readBinaryValue(Base64Variant b64variant, OutputStream out) throws IOException
     {
         if (_currToken != JsonToken.VALUE_EMBEDDED_OBJECT ) {
             // Todo, maybe: support base64 for text?
@@ -1383,8 +1393,7 @@ public class SmileParser extends ParserBase
         return totalCount;
     }
 
-    private void _readBinaryEncoded(OutputStream out, int length, byte[] buffer)
-            throws IOException
+    private void _readBinaryEncoded(OutputStream out, int length, byte[] buffer) throws IOException
     {
         int outPtr = 0;
         final int lastSafeOut = buffer.length - 7;
