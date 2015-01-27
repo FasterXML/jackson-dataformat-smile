@@ -1984,7 +1984,25 @@ public class SmileParser extends ParserBase
             _finishNumberToken(tb);
         }
     }
-    
+
+    @Override // since 2.6
+    protected int _parseIntValue() throws IOException
+    {
+        // Inlined variant of: _parseNumericValue(NR_INT)
+        if (_tokenIncomplete) {
+            _tokenIncomplete = false;
+            if ((_typeAsInt & 0x1F) == 4) {
+                _finishInt(); // vint
+                return _numberInt;
+            }
+            _finishNumberToken(_typeAsInt);
+        }
+        if ((_numTypesValid & NR_INT) == 0) {
+            convertNumberToInt();
+        }
+        return _numberInt;
+    }
+
     /**
      * Method called to finish parsing of a token so that token contents
      * are retrievable

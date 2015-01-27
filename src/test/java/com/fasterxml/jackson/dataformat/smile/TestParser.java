@@ -39,36 +39,50 @@ public class TestParser
 
     public void testSimple() throws IOException
     {
-    	byte[] data = _smileDoc("[ true, null, false ]");
-    	SmileParser p = _smileParser(data);
-    	assertNull(p.getCurrentToken());
+        byte[] data = _smileDoc("[ true, null, false ]");
+        SmileParser p = _smileParser(data);
+        assertNull(p.getCurrentToken());
         assertNull(p.getCurrentName());
-    	assertToken(JsonToken.START_ARRAY, p.nextToken());
+        assertToken(JsonToken.START_ARRAY, p.nextToken());
         assertNull(p.getCurrentName());
-    	assertToken(JsonToken.VALUE_TRUE, p.nextToken());
+        assertToken(JsonToken.VALUE_TRUE, p.nextToken());
         assertNull(p.getCurrentName());
-    	assertToken(JsonToken.VALUE_NULL, p.nextToken());
+        assertToken(JsonToken.VALUE_NULL, p.nextToken());
         assertNull(p.getCurrentName());
-    	assertToken(JsonToken.VALUE_FALSE, p.nextToken());
+        assertToken(JsonToken.VALUE_FALSE, p.nextToken());
         assertNull(p.getCurrentName());
-    	assertToken(JsonToken.END_ARRAY, p.nextToken());
+        assertToken(JsonToken.END_ARRAY, p.nextToken());
         assertNull(p.getCurrentName());
-    	assertNull(p.nextToken());
-    	p.close();
+        assertNull(p.nextToken());
+        p.close();
     }
 
+    public void testIntInArray() throws IOException
+    {
+        byte[] data = _smileDoc("[ 25.0 ]");
+        SmileParser p = _smileParser(data);
+        assertNull(p.getCurrentToken());
+        assertNull(p.getCurrentName());
+        assertToken(JsonToken.START_ARRAY, p.nextToken());
+        assertToken(JsonToken.VALUE_NUMBER_FLOAT, p.nextToken());
+        assertEquals(25, p.getIntValue());
+        assertToken(JsonToken.END_ARRAY, p.nextToken());
+        assertNull(p.getCurrentName());
+        p.close();
+    }
+    
     public void testArrayWithString() throws IOException
     {
-    	byte[] data = _smileDoc("[ \"abc\" ]");
-    	SmileParser p = _smileParser(data);
-    	assertNull(p.getCurrentToken());
-    	assertToken(JsonToken.START_ARRAY, p.nextToken());
-    	assertToken(JsonToken.VALUE_STRING, p.nextToken());
-    	assertEquals("abc", p.getText());
-    	assertEquals(0, p.getTextOffset());
-    	assertEquals(3, p.getTextLength());
-    	assertToken(JsonToken.END_ARRAY, p.nextToken());
-    	p.close();
+        byte[] data = _smileDoc("[ \"abc\" ]");
+        SmileParser p = _smileParser(data);
+        assertNull(p.getCurrentToken());
+        assertToken(JsonToken.START_ARRAY, p.nextToken());
+        assertToken(JsonToken.VALUE_STRING, p.nextToken());
+        assertEquals("abc", p.getText());
+        assertEquals(0, p.getTextOffset());
+        assertEquals(3, p.getTextLength());
+        assertToken(JsonToken.END_ARRAY, p.nextToken());
+        p.close();
     }
 
     public void testEmptyStrings() throws IOException
