@@ -9,8 +9,7 @@ import java.util.Arrays;
 import com.fasterxml.jackson.core.*;
 import com.fasterxml.jackson.core.base.ParserBase;
 import com.fasterxml.jackson.core.io.IOContext;
-import com.fasterxml.jackson.core.sym.BytesToNameCanonicalizer;
-import com.fasterxml.jackson.core.sym.Name;
+import com.fasterxml.jackson.core.sym.ByteQuadsCanonicalizer;
 import com.fasterxml.jackson.dataformat.smile.*;
 
 import static com.fasterxml.jackson.dataformat.smile.SmileConstants.BYTE_MARKER_END_OF_STRING;
@@ -171,7 +170,7 @@ public class NonBlockingParserImpl
     /**
      * Symbol table that contains field names encountered so far
      */
-    final protected BytesToNameCanonicalizer _symbols;
+    final protected ByteQuadsCanonicalizer _symbols;
     
     /**
      * Temporary buffer used for name parsing.
@@ -239,7 +238,7 @@ public class NonBlockingParserImpl
      */
 
     public NonBlockingParserImpl(IOContext ctxt, int parserFeatures, int smileFeatures,
-            ObjectCodec codec, BytesToNameCanonicalizer sym)
+            ObjectCodec codec, ByteQuadsCanonicalizer sym)
     {
         super(ctxt, parserFeatures);        
         _objectCodec = codec;
@@ -1526,22 +1525,20 @@ public class NonBlockingParserImpl
         case 2: // short ASCII
 	    {
 	        int len = 1 + (ch & 0x3f);
-        	String name;
-        	Name n = _findDecodedFromSymbols(len);
-        	if (n != null) {
-        	    name = n.getName();
-        	    _inputPtr += len;
-        	} else {
-        	    name = _decodeShortAsciiName(len);
-        	    name = _addDecodedToSymbols(len, name);
-        	}
-                if (_seenNames != null) {
-                   if (_seenNameCount >= _seenNames.length) {
-   	               _seenNames = _expandSeenNames(_seenNames);
-                   }
-                   _seenNames[_seenNameCount++] = name;
-                }
-                _parsingContext.setCurrentName(name);
+	        String name = _findDecodedFromSymbols(len);
+        	    if (name != null) {
+        	        _inputPtr += len;
+        	    } else {
+        	        name = _decodeShortAsciiName(len);
+        	        name = _addDecodedToSymbols(len, name);
+        	    }
+        	    if (_seenNames != null) {
+        	        if (_seenNameCount >= _seenNames.length) {
+        	            _seenNames = _expandSeenNames(_seenNames);
+        	        }
+        	        _seenNames[_seenNameCount++] = name;
+        	    }
+        	    _parsingContext.setCurrentName(name);
 	    }
 	    return JsonToken.FIELD_NAME;                
         case 3: // short Unicode
@@ -1558,10 +1555,8 @@ public class NonBlockingParserImpl
                     }
                 } else {
                     final int len = ch + 2; // values from 2 to 57...
-                    String name;
-                    Name n = _findDecodedFromSymbols(len);
-                    if (n != null) {
-                        name = n.getName();
+                    String name = _findDecodedFromSymbols(len);
+                    if (name != null) {
                         _inputPtr += len;
                     } else {
                         name = _decodeShortUnicodeName(len);
@@ -1616,13 +1611,13 @@ public class NonBlockingParserImpl
     private final String _addDecodedToSymbols(int len, String name)
     {
         if (len < 5) {
-            return _symbols.addName(name, _quad1, 0).getName();
+            return _symbols.addName(name, _quad1, 0);
         }
-	if (len < 9) {
-    	    return _symbols.addName(name, _quad1, _quad2).getName();
-	}
-	int qlen = (len + 3) >> 2;
-	return _symbols.addName(name, _quadBuffer, qlen).getName();
+        if (len < 9) {
+            return _symbols.addName(name, _quad1, _quad2);
+        }
+        int qlen = (len + 3) >> 2;
+        return _symbols.addName(name, _quadBuffer, qlen);
     }
 
     private final String _decodeShortAsciiName(int len)
@@ -1662,8 +1657,7 @@ public class NonBlockingParserImpl
      * 
      * @param len Length between 1 and 64
      */
-    private final String _decodeShortUnicodeName(int len)
-        throws IOException, JsonParseException
+    private final String _decodeShortUnicodeName(int len) throws IOException
     {
         // note: caller ensures we have enough bytes available
         int outPtr = 0;
@@ -1707,8 +1701,7 @@ public class NonBlockingParserImpl
     }
 
     // note: slightly edited copy of UTF8StreamParser.addName()
-    private final Name _decodeLongUnicodeName(int[] quads, int byteLen, int quadLen)
-        throws IOException, JsonParseException
+    private final String _decodeLongUnicodeName(int[] quads, int byteLen, int quadLen) throws IOException
     {
         int lastQuadBytes = byteLen & 3;
         // Ok: must decode UTF-8 chars. No other validation SHOULD be needed (except bounds checks?)
@@ -1871,12 +1864,9 @@ public class NonBlockingParserImpl
         }
         
         // Know this name already?
-        String name;
-        Name n = _symbols.findName(_quadBuffer, quads);
-        if (n != null) {
-            name = n.getName();
-        } else {
-            name = _decodeLongUnicodeName(_quadBuffer, byteLen, quads).getName();
+        String name = _symbols.findName(_quadBuffer, quads);
+        if (name == null) {
+            name = _decodeLongUnicodeName(_quadBuffer, byteLen, quads);
         }
         if (_seenNames != null) {
            if (_seenNameCount >= _seenNames.length) {
@@ -1891,8 +1881,7 @@ public class NonBlockingParserImpl
      * Helper method for trying to find specified encoded UTF-8 byte sequence
      * from symbol table; if successful avoids actual decoding to String
      */
-    private final Name _findDecodedFromSymbols(int len)
-    	throws IOException, JsonParseException
+    private final String _findDecodedFromSymbols(int len) throws IOException
     {
         if ((_inputEnd - _inputPtr) < len) {
             _loadToHaveAtLeast(len);
@@ -1945,7 +1934,7 @@ public class NonBlockingParserImpl
     /**
      * Method for locating names longer than 8 bytes (in UTF-8)
      */
-    private final Name _findDecodedMedium(int len)
+    private final String _findDecodedMedium(int len)
         throws IOException, JsonParseException
     {
     	// first, need enough buffer to store bytes as ints:
@@ -1954,11 +1943,11 @@ public class NonBlockingParserImpl
             if (bufLen > _quadBuffer.length) {
                 _quadBuffer = _growArrayTo(_quadBuffer, bufLen);
             }
-    	}
-    	// then decode, full quads first
-    	int offset = 0;
-    	int inPtr = _inputPtr;
-    	final byte[] inBuf = _inputBuffer;
+        }
+        // then decode, full quads first
+        int offset = 0;
+        int inPtr = _inputPtr;
+        final byte[] inBuf = _inputBuffer;
         do {
             int q = (inBuf[inPtr++] & 0xFF) << 8;
             q |= inBuf[inPtr++] & 0xFF;
@@ -1982,16 +1971,14 @@ public class NonBlockingParserImpl
         return _symbols.findName(_quadBuffer, offset);
     }
     
-    private static int[] _growArrayTo(int[] arr, int minSize)
-    {
-    	int[] newArray = new int[minSize + 4];
-    	if (arr != null) {
-            // !!! TODO: JDK 1.6, Arrays.copyOf
-            System.arraycopy(arr, 0, newArray, 0, arr.length);
+    private static int[] _growArrayTo(int[] arr, int minSize) {
+        final int size = minSize+4;
+        if (arr == null) {
+            return new int[size];
         }
-        return newArray;
+        return Arrays.copyOf(arr, size);
     }
-    
+
     /*
     /**********************************************************************
     /* Internal methods, secondary parsing
@@ -1999,12 +1986,11 @@ public class NonBlockingParserImpl
      */
 
     @Override
-    protected void _parseNumericValue(int expType)
-    	throws IOException, JsonParseException
+    protected void _parseNumericValue(int expType) throws IOException
     {
-    	if (_tokenIncomplete) {
-    	    _reportError("No current token available, can not call accessors");
-    	}
+        if (_tokenIncomplete) {
+            _reportError("No current token available, can not call accessors");
+        }
     }
     
     /**

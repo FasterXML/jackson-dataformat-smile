@@ -9,8 +9,7 @@ import java.util.Arrays;
 import com.fasterxml.jackson.core.*;
 import com.fasterxml.jackson.core.base.ParserBase;
 import com.fasterxml.jackson.core.io.IOContext;
-import com.fasterxml.jackson.core.sym.BytesToNameCanonicalizer;
-import com.fasterxml.jackson.core.sym.Name;
+import com.fasterxml.jackson.core.sym.ByteQuadsCanonicalizer;
 
 import static com.fasterxml.jackson.dataformat.smile.SmileConstants.BYTE_MARKER_END_OF_STRING;
 
@@ -164,7 +163,7 @@ public class SmileParser extends ParserBase
     /**
      * Symbol table that contains field names encountered so far
      */
-    final protected BytesToNameCanonicalizer _symbols;
+    final protected ByteQuadsCanonicalizer _symbols;
     
     /**
      * Temporary buffer used for name parsing.
@@ -216,7 +215,7 @@ public class SmileParser extends ParserBase
     
     public SmileParser(IOContext ctxt, int parserFeatures, int smileFeatures,
             ObjectCodec codec,
-            BytesToNameCanonicalizer sym,
+            ByteQuadsCanonicalizer sym,
             InputStream in, byte[] inputBuffer, int start, int end,
             boolean bufferRecyclable)
     {
@@ -954,10 +953,8 @@ public class SmileParser extends ParserBase
             case 2: // short ASCII
                 {
                     int len = 1 + (ch & 0x3f);
-                    String name;
-                    Name n = _findDecodedFromSymbols(len);
-                    if (n != null) {
-                        name = n.getName();
+                    String name = _findDecodedFromSymbols(len);
+                    if (name != null) {
                         _inputPtr += len;
                     } else {
                         name = _decodeShortAsciiName(len);
@@ -988,10 +985,8 @@ public class SmileParser extends ParserBase
                         }
                     } else {
                         final int len = ch + 2; // values from 2 to 57...
-                        String name;
-                        Name n = _findDecodedFromSymbols(len);
-                        if (n != null) {
-                            name = n.getName();
+                        String name = _findDecodedFromSymbols(len);
+                        if (name != null) {
                             _inputPtr += len;
                         } else {
                             name = _decodeShortUnicodeName(len);
@@ -1502,10 +1497,8 @@ public class SmileParser extends ParserBase
         case 2: // short ASCII
             {
                 int len = 1 + (ch & 0x3f);
-                String name;
-                Name n = _findDecodedFromSymbols(len);
-                if (n != null) {
-                    name = n.getName();
+                String name = _findDecodedFromSymbols(len);
+                if (name != null) {
                     _inputPtr += len;
                 } else {
                     name = _decodeShortAsciiName(len);
@@ -1534,10 +1527,8 @@ public class SmileParser extends ParserBase
                     }
                 } else {
                     final int len = ch + 2; // values from 2 to 57...
-                    String name;
-                    Name n = _findDecodedFromSymbols(len);
-                    if (n != null) {
-                        name = n.getName();
+                    String name = _findDecodedFromSymbols(len);
+                    if (name != null) {
                         _inputPtr += len;
                     } else {
                         name = _decodeShortUnicodeName(len);
@@ -1583,17 +1574,17 @@ public class SmileParser extends ParserBase
         }
         return newShared;
     }
-    
+
     private final String _addDecodedToSymbols(int len, String name)
     {
         if (len < 5) {
-            return _symbols.addName(name, _quad1, 0).getName();
+            return _symbols.addName(name, _quad1);
         }
         if (len < 9) {
-            return _symbols.addName(name, _quad1, _quad2).getName();
+            return _symbols.addName(name, _quad1, _quad2);
         }
         int qlen = (len + 3) >> 2;
-        return _symbols.addName(name, _quadBuffer, qlen).getName();
+        return _symbols.addName(name, _quadBuffer, qlen);
     }
 
     private final String _decodeShortAsciiName(int len) throws IOException
@@ -1684,7 +1675,7 @@ public class SmileParser extends ParserBase
     }
 
     // note: slightly edited copy of UTF8StreamParser.addName()
-    private final Name _decodeLongUnicodeName(int[] quads, int byteLen, int quadLen)
+    private final String _decodeLongUnicodeName(int[] quads, int byteLen, int quadLen)
         throws IOException
     {
         int lastQuadBytes = byteLen & 3;
@@ -1848,12 +1839,9 @@ public class SmileParser extends ParserBase
         }
         
         // Know this name already?
-        String name;
-        Name n = _symbols.findName(_quadBuffer, quads);
-        if (n != null) {
-            name = n.getName();
-        } else {
-            name = _decodeLongUnicodeName(_quadBuffer, byteLen, quads).getName();
+        String name = _symbols.findName(_quadBuffer, quads);
+        if (name == null) {
+            name = _decodeLongUnicodeName(_quadBuffer, byteLen, quads);
         }
         if (_seenNames != null) {
            if (_seenNameCount >= _seenNames.length) {
@@ -1868,7 +1856,7 @@ public class SmileParser extends ParserBase
      * Helper method for trying to find specified encoded UTF-8 byte sequence
      * from symbol table; if successful avoids actual decoding to String
      */
-    private final Name _findDecodedFromSymbols(int len) throws IOException
+    private final String _findDecodedFromSymbols(int len) throws IOException
     {
         if ((_inputEnd - _inputPtr) < len) {
             _loadToHaveAtLeast(len);
@@ -1921,7 +1909,7 @@ public class SmileParser extends ParserBase
     /**
      * Method for locating names longer than 8 bytes (in UTF-8)
      */
-    private final Name _findDecodedMedium(int len) throws IOException
+    private final String _findDecodedMedium(int len) throws IOException
     {
         // first, need enough buffer to store bytes as ints:
         {
@@ -1956,15 +1944,15 @@ public class SmileParser extends ParserBase
         }
         return _symbols.findName(_quadBuffer, offset);
     }
-    
+
     private static int[] _growArrayTo(int[] arr, int minSize) {
-    	final int size = minSize+4;
-    	if (arr == null) {
-    		return new int[size];
-    	}
-    	return Arrays.copyOf(arr, size);
+        final int size = minSize+4;
+        if (arr == null) {
+            return new int[size];
+        }
+        return Arrays.copyOf(arr, size);
     }
-    
+
     /*
     /**********************************************************
     /* Internal methods, secondary parsing

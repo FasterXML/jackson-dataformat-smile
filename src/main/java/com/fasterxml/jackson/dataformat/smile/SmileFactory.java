@@ -359,15 +359,14 @@ public class SmileFactory extends JsonFactory
      */
 
     /**
-     * Overridable factory method that actually instantiates desired
-     * parser.
+     * Overridable factory method that actually instantiates desired parser.
      */
     @Override
     protected SmileParser _createParser(InputStream in, IOContext ctxt) throws IOException
     {
-    	SmileParserBootstrapper bs = new SmileParserBootstrapper(ctxt, in);
-    	return bs.constructParser(_factoryFeatures, _parserFeatures,
-        		_smileParserFeatures, _objectCodec, _rootByteSymbols);
+        SmileParserBootstrapper bs = new SmileParserBootstrapper(ctxt, in);
+        return bs.constructParser(_factoryFeatures, _parserFeatures,
+        		_smileParserFeatures, _objectCodec, _byteSymbolCanonicalizer);
     }
 
     @Override
@@ -394,7 +393,7 @@ public class SmileFactory extends JsonFactory
     {
         return new SmileParserBootstrapper(ctxt, data, offset, len).constructParser(
                 _factoryFeatures, _parserFeatures, _smileParserFeatures,
-                _objectCodec, _rootByteSymbols);
+                _objectCodec, _byteSymbolCanonicalizer);
     }
 
     @Override

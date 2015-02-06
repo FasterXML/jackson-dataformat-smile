@@ -6,7 +6,7 @@ import com.fasterxml.jackson.core.*;
 import com.fasterxml.jackson.core.format.InputAccessor;
 import com.fasterxml.jackson.core.format.MatchStrength;
 import com.fasterxml.jackson.core.io.IOContext;
-import com.fasterxml.jackson.core.sym.BytesToNameCanonicalizer;
+import com.fasterxml.jackson.core.sym.ByteQuadsCanonicalizer;
 
 import static com.fasterxml.jackson.dataformat.smile.SmileConstants.*;
 
@@ -88,10 +88,10 @@ public class SmileParserBootstrapper
 
     public SmileParser constructParser(int factoryFeatures,
             int generalParserFeatures, int smileFeatures,
-            ObjectCodec codec, BytesToNameCanonicalizer rootByteSymbols)
+            ObjectCodec codec, ByteQuadsCanonicalizer rootByteSymbols)
         throws IOException, JsonParseException
     {
-        BytesToNameCanonicalizer can = rootByteSymbols.makeChild(factoryFeatures);
+        ByteQuadsCanonicalizer can = rootByteSymbols.makeChild(factoryFeatures);
         // We just need a single byte, really, to know if it starts with header
         int end = _inputEnd;
         if (_inputPtr < end && _in != null) {
