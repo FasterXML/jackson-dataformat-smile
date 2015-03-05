@@ -209,14 +209,6 @@ public class SmileGenerator
     protected final int _outputEnd;
 
     /**
-     * Intermediate buffer in which characters of a String are copied
-     * before being encoded.
-     */
-    protected char[] _charBuffer;
-
-    protected final int _charBufferLength;
-    
-    /**
      * Let's keep track of how many bytes have been output, may prove useful
      * when debugging. This does <b>not</b> include bytes buffered in
      * the output buffer, just bytes that have been written using underlying
@@ -291,8 +283,6 @@ public class SmileGenerator
         _bufferRecyclable = true;
         _outputBuffer = ctxt.allocWriteEncodingBuffer();
         _outputEnd = _outputBuffer.length;
-        _charBuffer = ctxt.allocConcatBuffer();
-        _charBufferLength = _charBuffer.length;
         // let's just sanity check to prevent nasty odd errors
         if (_outputEnd < MIN_BUFFER_LENGTH) {
             throw new IllegalStateException("Internal encoding buffer length ("+_outputEnd
@@ -333,8 +323,6 @@ public class SmileGenerator
         _outputTail = offset;
         _outputBuffer = outputBuffer;
         _outputEnd = _outputBuffer.length;
-        _charBuffer = ctxt.allocConcatBuffer();
-        _charBufferLength = _charBuffer.length;
         // let's just sanity check to prevent nasty odd errors
         if (_outputEnd < MIN_BUFFER_LENGTH) {
             throw new IllegalStateException("Internal encoding buffer length ("+_outputEnd
@@ -592,8 +580,7 @@ public class SmileGenerator
         _writeByte(TOKEN_LITERAL_END_OBJECT);
     }
 
-    private final void _writeFieldName(String name)
-        throws IOException, JsonGenerationException
+    private final void _writeFieldName(String name) throws IOException
     {
         int len = name.length();
         if (len == 0) {
@@ -618,10 +605,9 @@ public class SmileGenerator
             _flushBuffer();
         }
         // then let's copy String chars to char buffer, faster than using getChar (measured, profiled)
-        name.getChars(0, len, _charBuffer, 0);
         int origOffset = _outputTail;
         ++_outputTail; // to reserve space for type token
-        int byteLen = _shortUTF8Encode(_charBuffer, 0, len);
+        int byteLen = _shortUTF8Encode(name, 0, len);
         byte typeToken;
         
         // ASCII?
@@ -651,25 +637,19 @@ public class SmileGenerator
         }
     }
 
-    private final void _writeNonShortFieldName(final String name, final int len)
-        throws IOException, JsonGenerationException
+    private final void _writeNonShortFieldName(final String name, final int len) throws IOException
     {
         _writeByte(TOKEN_KEY_LONG_STRING);
         // can we still make a temp copy?
-        if (len > _charBufferLength) { // nah, not even that
-            _slowUTF8Encode(name);
-        } else { // yep.
-            name.getChars(0, len, _charBuffer, 0);
-            // but will encoded version fit in buffer?
-            int maxLen = len + len + len;
-            if (maxLen <= _outputBuffer.length) { // yes indeed
-                if ((_outputTail + maxLen) >= _outputEnd) {
-                    _flushBuffer();
-                }
-                 _shortUTF8Encode(_charBuffer, 0, len);
-            } else { // nope, need bit slower variant
-                _mediumUTF8Encode(_charBuffer, 0, len);
+        // but will encoded version fit in buffer?
+        int maxLen = len + len + len;
+        if (maxLen <= _outputBuffer.length) { // yes indeed
+            if ((_outputTail + maxLen) >= _outputEnd) {
+                _flushBuffer();
             }
+             _shortUTF8Encode(name, 0, len);
+        } else { // nope, need bit slower variant
+            _mediumUTF8Encode(name, 0, len);
         }
         if (_seenNameCount >= 0) {
             _addSeenName(name);
@@ -751,7 +731,7 @@ public class SmileGenerator
     }
 
     protected final void _writeFieldNameUnicode(SerializableString name, byte[] bytes)
-        throws IOException, JsonGenerationException
+        throws IOException
     {
         final int byteLen = bytes.length;
 
@@ -802,7 +782,7 @@ public class SmileGenerator
     }
 
     private final void _writeSharedNameReference(int ix)
-        throws IOException,JsonGenerationException
+        throws IOException
     {
         // 03-Mar-2011, tatu: Related to [JACKSON-525], let's add a sanity check here
         if (ix >= _seenNameCount) {
@@ -823,7 +803,7 @@ public class SmileGenerator
      */
 
     @Override
-    public void writeString(String text) throws IOException,JsonGenerationException
+    public void writeString(String text) throws IOException
     {
         if (text == null) {
             writeNull();
@@ -855,10 +835,9 @@ public class SmileGenerator
             _flushBuffer();
         }
         // then let's copy String chars to char buffer, faster than using getChar (measured, profiled)
-        text.getChars(0, len, _charBuffer, 0);
         int origOffset = _outputTail;
         ++_outputTail; // to leave room for type token
-        int byteLen = _shortUTF8Encode(_charBuffer, 0, len);
+        int byteLen = _shortUTF8Encode(text, 0, len);
         if (byteLen <= MAX_SHORT_VALUE_STRING_BYTES) { // yes, is short indeed
             // plus keep reference, if it could be shared:
             if (_seenStringValueCount >= 0) {
@@ -878,8 +857,7 @@ public class SmileGenerator
         }
     }
 
-    private final void _writeSharedStringValueReference(int ix)
-        throws IOException,JsonGenerationException
+    private final void _writeSharedStringValueReference(int ix) throws IOException
     {
         // 03-Mar-2011, tatu: Related to [JACKSON-525], let's add a sanity check here
         if (ix >= _seenStringValueCount) {
@@ -897,24 +875,15 @@ public class SmileGenerator
      * Helper method called to handle cases where String value to write is known
      * to be long enough not to be shareable.
      */
-    private final void _writeNonSharedString(final String text, final int len)
-        throws IOException,JsonGenerationException
+    private final void _writeNonSharedString(final String text, final int len) throws IOException
     {
-        // First: can we at least make a copy to char[]?
-        if (len > _charBufferLength) { // nope; need to skip copy step (alas; this is slower)
-            _writeByte(SmileConstants.TOKEN_MISC_LONG_TEXT_UNICODE);
-            _slowUTF8Encode(text);
-            _writeByte(BYTE_MARKER_END_OF_STRING);
-            return;
-        }
-        text.getChars(0, len, _charBuffer, 0);
         // Expansion can be 3x for Unicode; and then there's type byte and end marker, so:
         int maxLen = len + len + len + 2;
         // Next: does it always fit within output buffer?
         if (maxLen > _outputBuffer.length) { // nope
             // can't rewrite type buffer, so can't speculate it might be all-ASCII
             _writeByte(SmileConstants.TOKEN_MISC_LONG_TEXT_UNICODE);
-            _mediumUTF8Encode(_charBuffer, 0, len);
+            _mediumUTF8Encode(text, 0, len);
             _writeByte(BYTE_MARKER_END_OF_STRING);
             return;
         }
@@ -925,7 +894,7 @@ public class SmileGenerator
         int origOffset = _outputTail;
         // can't say for sure if it's ASCII or Unicode, so:
         _writeByte(TOKEN_BYTE_LONG_STRING_ASCII);
-        int byteLen = _shortUTF8Encode(_charBuffer, 0, len);
+        int byteLen = _shortUTF8Encode(text, 0, len);
         // If not ASCII, fix type:
         if (byteLen > len) {
             _outputBuffer[origOffset] = SmileConstants.TOKEN_MISC_LONG_TEXT_UNICODE;
@@ -1633,76 +1602,67 @@ public class SmileGenerator
         _outputTail = outputPtr;
         return codedLen;
     }
-    
-    private void _slowUTF8Encode(String str) throws IOException
+
+    private final int _shortUTF8Encode(String str, int i, int end)
     {
-        final int len = str.length();
-        int inputPtr = 0;
-        final int bufferEnd = _outputEnd - 4;
-        
-        output_loop:
-        for (; inputPtr < len; ) {
-            /* First, let's ensure we can output at least 4 bytes
-             * (longest UTF-8 encoded codepoint):
-             */
-            if (_outputTail >= bufferEnd) {
-                _flushBuffer();
+        // First: let's see if it's all ASCII: that's rather fast
+        int ptr = _outputTail;
+        final byte[] outBuf = _outputBuffer;
+        do {
+            int c = str.charAt(i);
+            if (c > 0x7F) {
+                return _shortUTF8Encode2(str, i, end, ptr);
             }
-            int c = str.charAt(inputPtr++);
-            // And then see if we have an ASCII char:
-            if (c <= 0x7F) { // If so, can do a tight inner loop:
-                _outputBuffer[_outputTail++] = (byte)c;
-                // Let's calc how many ASCII chars we can copy at most:
-                int maxInCount = (len - inputPtr);
-                int maxOutCount = (bufferEnd - _outputTail);
+            outBuf[ptr++] = (byte) c;
+        } while (++i < end);
+        int codedLen = ptr - _outputTail;
+        _outputTail = ptr;
+        return codedLen;
+    }
 
-                if (maxInCount > maxOutCount) {
-                    maxInCount = maxOutCount;
-                }
-                maxInCount += inputPtr;
-                ascii_loop:
-                while (true) {
-                    if (inputPtr >= maxInCount) { // done with max. ascii seq
-                        continue output_loop;
-                    }
-                    c = str.charAt(inputPtr++);
-                    if (c > 0x7F) {
-                        break ascii_loop;
-                    }
-                    _outputBuffer[_outputTail++] = (byte) c;
-                }
+    private final int _shortUTF8Encode2(String str, int i, int end, int outputPtr)
+    {
+        final byte[] outBuf = _outputBuffer;
+        while (i < end) {
+            int c = str.charAt(i++);
+            if (c <= 0x7F) {
+                outBuf[outputPtr++] = (byte) c;
+                continue;
             }
-
             // Nope, multi-byte:
             if (c < 0x800) { // 2-byte
-                _outputBuffer[_outputTail++] = (byte) (0xc0 | (c >> 6));
-                _outputBuffer[_outputTail++] = (byte) (0x80 | (c & 0x3f));
-            } else { // 3 or 4 bytes
-                // Surrogates?
-                if (c < SURR1_FIRST || c > SURR2_LAST) {
-                    _outputBuffer[_outputTail++] = (byte) (0xe0 | (c >> 12));
-                    _outputBuffer[_outputTail++] = (byte) (0x80 | ((c >> 6) & 0x3f));
-                    _outputBuffer[_outputTail++] = (byte) (0x80 | (c & 0x3f));
-                    continue;
-                }
-                // Yup, a surrogate:
-                if (c > SURR1_LAST) { // must be from first range
-                    _throwIllegalSurrogate(c);
-                }
-                // and if so, followed by another from next range
-                if (inputPtr >= len) {
-                    _throwIllegalSurrogate(c);
-                }
-                c = _convertSurrogate(c, str.charAt(inputPtr++));
-                if (c > 0x10FFFF) { // illegal, as per RFC 4627
-                    _throwIllegalSurrogate(c);
-                }
-                _outputBuffer[_outputTail++] = (byte) (0xf0 | (c >> 18));
-                _outputBuffer[_outputTail++] = (byte) (0x80 | ((c >> 12) & 0x3f));
-                _outputBuffer[_outputTail++] = (byte) (0x80 | ((c >> 6) & 0x3f));
-                _outputBuffer[_outputTail++] = (byte) (0x80 | (c & 0x3f));
+                outBuf[outputPtr++] = (byte) (0xc0 | (c >> 6));
+                outBuf[outputPtr++] = (byte) (0x80 | (c & 0x3f));
+                continue;
             }
+            // 3 or 4 bytes (surrogate)
+            // Surrogates?
+            if (c < SURR1_FIRST || c > SURR2_LAST) { // nope, regular 3-byte character
+                outBuf[outputPtr++] = (byte) (0xe0 | (c >> 12));
+                outBuf[outputPtr++] = (byte) (0x80 | ((c >> 6) & 0x3f));
+                outBuf[outputPtr++] = (byte) (0x80 | (c & 0x3f));
+                continue;
+            }
+            // Yup, a surrogate pair
+            if (c > SURR1_LAST) { // must be from first range; second won't do
+                _throwIllegalSurrogate(c);
+            }
+            // ... meaning it must have a pair
+            if (i >= end) {
+                _throwIllegalSurrogate(c);
+            }
+            c = _convertSurrogate(c, str.charAt(i++));
+            if (c > 0x10FFFF) { // illegal in JSON as well as in XML
+                _throwIllegalSurrogate(c);
+            }
+            outBuf[outputPtr++] = (byte) (0xf0 | (c >> 18));
+            outBuf[outputPtr++] = (byte) (0x80 | ((c >> 12) & 0x3f));
+            outBuf[outputPtr++] = (byte) (0x80 | ((c >> 6) & 0x3f));
+            outBuf[outputPtr++] = (byte) (0x80 | (c & 0x3f));
         }
+        int codedLen = outputPtr - _outputTail;
+        _outputTail = outputPtr;
+        return codedLen;
     }
 
     private void _mediumUTF8Encode(char[] str, int inputPtr, int inputEnd) throws IOException
@@ -1763,6 +1723,75 @@ public class SmileGenerator
                     _throwIllegalSurrogate(c);
                 }
                 c = _convertSurrogate(c, str[inputPtr++]);
+                if (c > 0x10FFFF) { // illegal, as per RFC 4627
+                    _throwIllegalSurrogate(c);
+                }
+                _outputBuffer[_outputTail++] = (byte) (0xf0 | (c >> 18));
+                _outputBuffer[_outputTail++] = (byte) (0x80 | ((c >> 12) & 0x3f));
+                _outputBuffer[_outputTail++] = (byte) (0x80 | ((c >> 6) & 0x3f));
+                _outputBuffer[_outputTail++] = (byte) (0x80 | (c & 0x3f));
+            }
+        }
+    }
+
+    private void _mediumUTF8Encode(String str, int inputPtr, int inputEnd) throws IOException
+    {
+        final int bufferEnd = _outputEnd - 4;
+        
+        output_loop:
+        while (inputPtr < inputEnd) {
+            /* First, let's ensure we can output at least 4 bytes
+             * (longest UTF-8 encoded codepoint):
+             */
+            if (_outputTail >= bufferEnd) {
+                _flushBuffer();
+            }
+            int c = str.charAt(inputPtr++);
+            // And then see if we have an ASCII char:
+            if (c <= 0x7F) { // If so, can do a tight inner loop:
+                _outputBuffer[_outputTail++] = (byte)c;
+                // Let's calc how many ASCII chars we can copy at most:
+                int maxInCount = (inputEnd - inputPtr);
+                int maxOutCount = (bufferEnd - _outputTail);
+
+                if (maxInCount > maxOutCount) {
+                    maxInCount = maxOutCount;
+                }
+                maxInCount += inputPtr;
+                ascii_loop:
+                while (true) {
+                    if (inputPtr >= maxInCount) { // done with max. ascii seq
+                        continue output_loop;
+                    }
+                    c = str.charAt(inputPtr++);
+                    if (c > 0x7F) {
+                        break ascii_loop;
+                    }
+                    _outputBuffer[_outputTail++] = (byte) c;
+                }
+            }
+
+            // Nope, multi-byte:
+            if (c < 0x800) { // 2-byte
+                _outputBuffer[_outputTail++] = (byte) (0xc0 | (c >> 6));
+                _outputBuffer[_outputTail++] = (byte) (0x80 | (c & 0x3f));
+            } else { // 3 or 4 bytes
+                // Surrogates?
+                if (c < SURR1_FIRST || c > SURR2_LAST) {
+                    _outputBuffer[_outputTail++] = (byte) (0xe0 | (c >> 12));
+                    _outputBuffer[_outputTail++] = (byte) (0x80 | ((c >> 6) & 0x3f));
+                    _outputBuffer[_outputTail++] = (byte) (0x80 | (c & 0x3f));
+                    continue;
+                }
+                // Yup, a surrogate:
+                if (c > SURR1_LAST) { // must be from first range
+                    _throwIllegalSurrogate(c);
+                }
+                // and if so, followed by another from next range
+                if (inputPtr >= inputEnd) {
+                    _throwIllegalSurrogate(c);
+                }
+                c = _convertSurrogate(c, str.charAt(inputPtr++));
                 if (c > 0x10FFFF) { // illegal, as per RFC 4627
                     _throwIllegalSurrogate(c);
                 }
@@ -2178,11 +2207,6 @@ public class SmileGenerator
         if (buf != null && _bufferRecyclable) {
             _outputBuffer = null;
             _ioContext.releaseWriteEncodingBuffer(buf);
-        }
-        char[] cbuf = _charBuffer;
-        if (cbuf != null) {
-            _charBuffer = null;
-            _ioContext.releaseConcatBuffer(cbuf);
         }
         /* Ok: since clearing up of larger arrays is much slower,
          * let's only recycle default-sized buffers...
