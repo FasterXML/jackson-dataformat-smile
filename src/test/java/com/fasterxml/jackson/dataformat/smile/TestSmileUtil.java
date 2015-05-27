@@ -40,5 +40,5 @@ public class TestSmileUtil extends SmileTestBase
         // round-trip
         assertEquals(Long.MIN_VALUE, SmileUtil.zigzagDecode(SmileUtil.zigzagEncode(Long.MIN_VALUE)));
         assertEquals(Long.MAX_VALUE, SmileUtil.zigzagDecode(SmileUtil.zigzagEncode(Long.MAX_VALUE)));
-}
+    }
 }

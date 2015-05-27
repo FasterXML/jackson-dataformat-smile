@@ -14,7 +14,8 @@ import com.fasterxml.jackson.core.base.GeneratorBase;
 import static com.fasterxml.jackson.dataformat.smile.SmileConstants.*;
 
 /**
- * {@link JsonGenerator} implementation for the experimental "Binary JSON Infoset".
+ * {@link JsonGenerator} implementation for Smile-encoded content
+ * (see <a href="http://wiki.fasterxml.com/SmileFormatSpec">Smile Format Specification</a>)
  * 
  * @author tatu
  */
@@ -436,7 +437,12 @@ public class SmileGenerator
     public Object getOutputTarget() {
         return _out;
     }
-    
+
+    @Override
+    public int getOutputBuffered() {
+        return _outputTail;
+    }
+
     /*
     /**********************************************************
     /* Overridden methods, write methods

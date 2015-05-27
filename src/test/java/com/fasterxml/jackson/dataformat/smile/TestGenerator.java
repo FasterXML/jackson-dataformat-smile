@@ -25,8 +25,11 @@ public class TestGenerator
         // false, no header (or frame marker)
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         SmileGenerator gen = smileGenerator(out, false);
+        assertEquals(0, gen.getOutputBuffered());
         gen.writeBoolean(true);
+        assertEquals(1, gen.getOutputBuffered());
         gen.close();
+        assertEquals(0, gen.getOutputBuffered());
         _verifyBytes(out.toByteArray(), SmileConstants.TOKEN_LITERAL_TRUE);
 
         // false, no header or frame marker
@@ -53,7 +56,7 @@ public class TestGenerator
         // note: version, and 'check shared names', but not 'check shared strings' or 'raw binary'
         int b4 = HEADER_BYTE_4 | SmileConstants.HEADER_BIT_HAS_SHARED_NAMES;
 
-    	_verifyBytes(out.toByteArray(),
+        _verifyBytes(out.toByteArray(),
                 HEADER_BYTE_1, HEADER_BYTE_2, HEADER_BYTE_3, (byte) b4,
                 SmileConstants.TOKEN_LITERAL_TRUE);
 
@@ -62,6 +65,8 @@ public class TestGenerator
         gen = smileGenerator(out, true);
         gen.enable(SmileGenerator.Feature.WRITE_END_MARKER);
         gen.writeNull();
+        // header (4 bytes) and boolen (1 byte)
+        assertEquals(5, gen.getOutputBuffered());
         gen.close();
         _verifyBytes(out.toByteArray(),
                 HEADER_BYTE_1, HEADER_BYTE_2, HEADER_BYTE_3, (byte) b4,
