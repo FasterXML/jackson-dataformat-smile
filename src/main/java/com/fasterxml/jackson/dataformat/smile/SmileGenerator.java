@@ -28,8 +28,8 @@ public class SmileGenerator
      * NOTE: Alas, can not implement <code>com.fasterxml.jackson.databind.cfg.ConfigFeature</code>
      * since we do not depend on jackson-databind
      */
-    public enum Feature /*implements com.fasterxml.jackson.databind.cfg.ConfigFeature*/ {
-
+    public enum Feature implements FormatFeature
+    {
         /**
          * Whether to write 4-byte header sequence when starting output or not.
          * If disabled, no header is written; this may be useful in embedded cases
@@ -111,13 +111,9 @@ public class SmileGenerator
             _mask = (1 << ordinal());
         }
 
-        //@Override
-        public boolean enabledByDefault() { return _defaultState; }
-
-        //@Override
-        public int getMask() { return _mask; }
-
-        public boolean enabledIn(int flags) { return (flags & getMask()) != 0; }    
+        @Override public boolean enabledByDefault() { return _defaultState; }
+        @Override public int getMask() { return _mask; }
+        @Override public boolean enabledIn(int flags) { return (flags & getMask()) != 0; }    
     }
 
     /**
@@ -178,7 +174,7 @@ public class SmileGenerator
      * {@link com.fasterxml.jackson.dataformat.smile.SmileGenerator.Feature}s
      * are enabled.
      */
-    protected int _smileFeatures;
+    protected int _formatFeatures;
 
     /**
      * Helper object used for low-level recycling of Smile-generator
@@ -277,7 +273,7 @@ public class SmileGenerator
             ObjectCodec codec, OutputStream out)
     {
         super(jsonFeatures, codec);
-        _smileFeatures = smileFeatures;
+        _formatFeatures = smileFeatures;
         _ioContext = ctxt;
         _smileBufferRecycler = _smileBufferRecycler();
         _out = out;
@@ -316,7 +312,7 @@ public class SmileGenerator
             ObjectCodec codec, OutputStream out, byte[] outputBuffer, int offset, boolean bufferRecyclable)
     {
         super(jsonFeatures, codec);
-        _smileFeatures = smileFeatures;
+        _formatFeatures = smileFeatures;
         _ioContext = ctxt;
         _smileBufferRecycler = _smileBufferRecycler();
         _out = out;
@@ -361,14 +357,14 @@ public class SmileGenerator
      */
     public void writeHeader() throws IOException
     {
-    	int last = HEADER_BYTE_4;
-        if ((_smileFeatures & Feature.CHECK_SHARED_NAMES.getMask()) != 0) {
+        int last = HEADER_BYTE_4;
+        if (Feature.CHECK_SHARED_NAMES.enabledIn(_formatFeatures)) {
             last |= SmileConstants.HEADER_BIT_HAS_SHARED_NAMES;
         }
-        if ((_smileFeatures & Feature.CHECK_SHARED_STRING_VALUES.getMask()) != 0) {
+        if (Feature.CHECK_SHARED_STRING_VALUES.enabledIn(_formatFeatures)) {
             last |= SmileConstants.HEADER_BIT_HAS_SHARED_STRING_VALUES;
         }
-        if ((_smileFeatures & Feature.ENCODE_BINARY_AS_7BIT.getMask()) == 0) {
+        if (!Feature.ENCODE_BINARY_AS_7BIT.enabledIn(_formatFeatures)) {
             last |= SmileConstants.HEADER_BIT_HAS_RAW_BINARY;
         }
         _writeBytes(HEADER_BYTE_1, HEADER_BYTE_2, HEADER_BYTE_3, (byte) last);
@@ -443,6 +439,19 @@ public class SmileGenerator
         return _outputTail;
     }
 
+//  public JsonParser overrideStdFeatures(int values, int mask)
+
+    @Override
+    public int getFormatFeatures() {
+        return _formatFeatures;
+    }
+
+    @Override
+    public JsonGenerator overrideFormatFeatures(int values, int mask) {
+        _formatFeatures = (_formatFeatures & ~mask) | (values & mask);
+        return this;
+    }
+
     /*
     /**********************************************************
     /* Overridden methods, write methods
@@ -491,17 +500,17 @@ public class SmileGenerator
      */
 
     public SmileGenerator enable(Feature f) {
-        _smileFeatures |= f.getMask();
+        _formatFeatures |= f.getMask();
         return this;
     }
 
     public SmileGenerator disable(Feature f) {
-        _smileFeatures &= ~f.getMask();
+        _formatFeatures &= ~f.getMask();
         return this;
     }
 
     public final boolean isEnabled(Feature f) {
-        return (_smileFeatures & f.getMask()) != 0;
+        return (_formatFeatures & f.getMask()) != 0;
     }
 
     public SmileGenerator configure(Feature f, boolean state) {

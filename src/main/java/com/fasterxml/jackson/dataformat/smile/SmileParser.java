@@ -17,11 +17,9 @@ public class SmileParser extends ParserBase
 {
     /**
      * Enumeration that defines all togglable features for Smile generators.
-     *<P>
-     * NOTE: Alas, can not implement <code>com.fasterxml.jackson.databind.cfg.ConfigFeature</code>
-     * since we do not depend on jackson-databind
      */
-    public enum Feature /*implements com.fasterxml.jackson.databind.cfg.ConfigFeature*/ {
+    public enum Feature implements FormatFeature
+    {
         /**
          * Feature that determines whether 4-byte Smile header is mandatory in input,
          * or optional. If enabled, it means that only input that starts with the header
@@ -33,7 +31,7 @@ public class SmileParser extends ParserBase
 
         final boolean _defaultState;
         final int _mask;
-        
+
         /**
          * Method that calculates bit set (flags) of all features that
          * are enabled by default.
@@ -48,19 +46,15 @@ public class SmileParser extends ParserBase
             }
             return flags;
         }
-        
+
         private Feature(boolean defaultState) {
             _defaultState = defaultState;
             _mask = (1 << ordinal());
         }
 
-        //@Override
-        public boolean enabledByDefault() { return _defaultState; }
-
-        //@Override
-        public int getMask() { return _mask; }
-
-        public boolean enabledIn(int flags) { return (flags & getMask()) != 0; }    
+        @Override public boolean enabledByDefault() { return _defaultState; }
+        @Override public int getMask() { return _mask; }
+        @Override public boolean enabledIn(int flags) { return (flags & getMask()) != 0; }    
     }
 
     private final static int[] NO_INTS = new int[0];
@@ -113,6 +107,15 @@ public class SmileParser extends ParserBase
      */
     protected byte[] _inputBuffer;
 
+    /**
+     * Bit flag composed of bits that indicate which
+     * {@link SmileParser.Feature}s are enabled.
+     *<p>
+     * NOTE: currently the only feature ({@link SmileParser.Feature#REQUIRE_HEADER}
+     * takes effect during bootstrapping.
+     */
+    protected int _formatFeatures;
+    
     /**
      * Flag that indicates whether the input buffer is recycable (and
      * needs to be returned to recycler once we are done) or not.
@@ -222,6 +225,7 @@ public class SmileParser extends ParserBase
         super(ctxt, parserFeatures);        
         _objectCodec = codec;
         _symbols = sym;
+        _formatFeatures = smileFeatures;
 
         _inputStream = in;
         _inputBuffer = inputBuffer;
@@ -323,7 +327,24 @@ public class SmileParser extends ParserBase
     public Version version() {
         return PackageVersion.VERSION;
     }
-    
+
+    /*                                                                                       
+    /**********************************************************                              
+    /* FormatFeature support                                                                             
+    /**********************************************************                              
+     */
+
+    @Override
+    public int getFormatFeatures() {
+        return _formatFeatures;
+    }
+
+    @Override
+    public JsonParser overrideFormatFeatures(int values, int mask) {
+        _formatFeatures = (_formatFeatures & ~mask) | (values & mask);
+        return this;
+    }
+
     /*
     /**********************************************************
     /* Former StreamBasedParserBase methods

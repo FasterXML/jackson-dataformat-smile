@@ -26,7 +26,7 @@ import com.fasterxml.jackson.core.io.IOContext;
  */
 public class SmileFactory extends JsonFactory
 {
-    private static final long serialVersionUID = -1696783009312472365L;
+    private static final long serialVersionUID = 1L; // since 2.6
 
     /*
     /**********************************************************
@@ -175,10 +175,20 @@ public class SmileFactory extends JsonFactory
     /* Capability introspection
     /**********************************************************
      */
-    
+
     @Override
     public boolean canHandleBinaryNatively() {
         return true;
+    }
+
+    @Override // since 2.6
+    public Class<SmileParser.Feature> getFormatReadFeatureType() {
+        return SmileParser.Feature.class;
+    }
+
+    @Override // since 2.6
+    public Class<SmileGenerator.Feature> getFormatWriteFeatureType() {
+        return SmileGenerator.Feature.class;
     }
 
     /*

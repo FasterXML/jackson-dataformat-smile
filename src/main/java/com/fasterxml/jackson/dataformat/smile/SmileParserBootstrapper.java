@@ -110,28 +110,28 @@ public class SmileParserBootstrapper
                 // need to ensure it gets properly handled so caller won't see the signature
                 hadSig = p.handleSignature(true, true);
             }
-    	} else {
-    	    /* 11-Oct-2012, tatu: Actually, let's allow empty documents even if
-    	     *   header signature would otherwise be needed. This is useful for
-    	     *   JAX-RS provider, empty PUT/POST payloads.
-    	     */
-    	    return p;
-    	}
-    	if (!hadSig && (smileFeatures & SmileParser.Feature.REQUIRE_HEADER.getMask()) != 0) {
-    	    // Ok, first, let's see if it looks like plain JSON...
-    	    String msg;
+        } else {
+            /* 11-Oct-2012, tatu: Actually, let's allow empty documents even if
+             *   header signature would otherwise be needed. This is useful for
+             *   JAX-RS provider, empty PUT/POST payloads.
+             */
+            return p;
+        }
+        if (!hadSig && SmileParser.Feature.REQUIRE_HEADER.enabledIn(smileFeatures)) {
+            // Ok, first, let's see if it looks like plain JSON...
+            String msg;
 
-    	    byte firstByte = (_inputPtr < _inputEnd) ? _inputBuffer[_inputPtr] : 0;
-    	    if (firstByte == '{' || firstByte == '[') {
+            byte firstByte = (_inputPtr < _inputEnd) ? _inputBuffer[_inputPtr] : 0;
+            if (firstByte == '{' || firstByte == '[') {
                 msg = "Input does not start with Smile format header (first byte = 0x"
                     +Integer.toHexString(firstByte & 0xFF)+") -- rather, it starts with '"+((char) firstByte)
                     +"' (plain JSON input?) -- can not parse";
-    	    } else {
+            } else {
                 msg = "Input does not start with Smile format header (first byte = 0x"
                 +Integer.toHexString(firstByte & 0xFF)+") and parser has REQUIRE_HEADER enabled: can not parse";
-    	    }
-    	    throw new JsonParseException(msg, JsonLocation.NA);
-    	}
+            }
+            throw new JsonParseException(msg, JsonLocation.NA);
+        }
         return p;
     }
 
