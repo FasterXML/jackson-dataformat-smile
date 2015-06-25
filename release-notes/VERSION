@@ -8,6 +8,7 @@ Project: jackson-dataformat-smile
 
 - Upgrade to the new symbol table (included in jackson-core 2.6)
 
+2.5.4 (09-Jun-2015)
 2.5.3 (24-Apr-2015)
 2.5.2 (29-Mar-2015)
 2.5.1 (06-Feb-2015)
