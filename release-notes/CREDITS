@@ -13,6 +13,9 @@ brharrington@github:
   * Reported #17: Boundary error with `float`/`double` values, large content
    (2.4.1)
 
+Lee Yun-young (lseeker@github)
+  * Report #25: Buffer overrun when writing unencoded binary content
+   (2.4.7 / 2.5.5)
 
 mcmahon356@github:
   * Reported 24: Current location does not always updated properly

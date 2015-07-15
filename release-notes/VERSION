@@ -8,6 +8,11 @@ Project: jackson-dataformat-smile
 
 - Upgrade to the new symbol table (included in jackson-core 2.6)
 
+2.5.5 (not yet released)
+
+#25: Buffer overrun when trying to write longer binary content
+ (report by Lee Y-Y)
+
 2.5.4 (09-Jun-2015)
 2.5.3 (24-Apr-2015)
 2.5.2 (29-Mar-2015)
@@ -16,7 +21,7 @@ Project: jackson-dataformat-smile
 
 No changes since 2.4.
 
-2.4.6 (not yet released)
+2.4.6 (23-Apr-2015)
 
 #24: Current location does not always updated properly
  (reported by mcmahon356@github)
