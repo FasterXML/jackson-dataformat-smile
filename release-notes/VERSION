@@ -4,9 +4,10 @@ Project: jackson-dataformat-smile
 === History: ===
 ------------------------------------------------------------------------
 
-2.3.6 (not yet released)
+2.3.5.1 (15-Jul-2015)
 
 #24: Current location does not always updated properly
+#25: Buffer overwrite with longer unencoded binary content
 
 2.3.5 (14-Jan-2015)
 
