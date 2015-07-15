@@ -1943,6 +1943,9 @@ public class SmileGenerator
                 _flushBuffer();
                 room = _outputEnd - _outputTail;
             }
+            if (room > bytesLeft) {
+            	room = bytesLeft;
+            }
             int count = in.read(_outputBuffer, _outputTail, room);
             if (count < 0) {
                 break;
