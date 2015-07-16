@@ -4,7 +4,7 @@ Project: jackson-dataformat-smile
 === Releases ===
 ------------------------------------------------------------------------
 
-2.4.7 (not released)
+2.4.6.1 (15-Jul-2015)
 
 #25: Buffer overrun when trying to write longer binary content
  (report by Lee Y-Y)
