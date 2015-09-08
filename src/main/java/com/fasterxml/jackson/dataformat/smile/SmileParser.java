@@ -1890,11 +1890,11 @@ public class SmileParser extends ParserBase
             int inPtr = _inputPtr;
             final byte[] inBuf = _inputBuffer;
             int q = inBuf[inPtr] & 0xFF;
-            if (len > 0) {
+            if (len > 1) {
                 q = (q << 8) + (inBuf[++inPtr] & 0xFF);
-                if (len > 1) {
+                if (len > 2) {
                     q = (q << 8) + (inBuf[++inPtr] & 0xFF);
-                    if (len > 2) {
+                    if (len > 3) {
                         q = (q << 8) + (inBuf[++inPtr] & 0xFF);
                     }
                 }

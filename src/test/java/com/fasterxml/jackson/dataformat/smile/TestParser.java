@@ -3,14 +3,11 @@ package com.fasterxml.jackson.dataformat.smile;
 import java.io.*;
 
 import com.fasterxml.jackson.core.*;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 
-import com.fasterxml.jackson.dataformat.smile.SmileConstants;
-import com.fasterxml.jackson.dataformat.smile.SmileFactory;
-import com.fasterxml.jackson.dataformat.smile.SmileGenerator;
-import com.fasterxml.jackson.dataformat.smile.SmileParser;
-
-public class TestParser
-    extends SmileTestBase
+public class TestParser extends SmileTestBase
 {
     // Unit tests for verifying that if header/signature is required,
     // lacking it is fatal
@@ -434,6 +431,52 @@ public class TestParser
         assertToken(JsonToken.END_ARRAY, p.nextToken());
         assertNull(p.nextToken());
         p.close();
+    }
+
+    // for [dataformat-smile#26]
+    public void testIssue26ArrayOutOfBounds() throws Exception
+    {
+        SmileFactory f = new SmileFactory();
+        ObjectMapper mapper = new ObjectMapper(new SmileFactory());
+        byte[] buffer = _generateHugeDoc(f);
+
+        // split the buffer in two smaller buffers
+        int len = 160;
+        byte[] buf1 = new byte[len];
+        byte[] buf2 = new byte[buffer.length - len];
+        System.arraycopy(buffer, 0, buf1, 0, len);
+        System.arraycopy(buffer, len, buf2, 0, buffer.length - len);
+
+        // aggregate the two buffers via a SequenceInputStream
+        ByteArrayInputStream in1 = new ByteArrayInputStream(buf1);
+        ByteArrayInputStream in2 = new ByteArrayInputStream(buf2);
+        SequenceInputStream inputStream = new SequenceInputStream(in1, in2);
+
+        JsonNode jsonNode = mapper.readTree(inputStream);
+        assertNotNull(jsonNode);
+
+        // let's actually verify
+        ArrayNode arr = (ArrayNode) jsonNode;
+        assertEquals(26, arr.size());
+    }
+
+    private byte[] _generateHugeDoc(SmileFactory f) throws IOException
+    {
+        ByteArrayOutputStream b = new ByteArrayOutputStream();
+        JsonGenerator g = f.createGenerator(b);
+        g.writeStartArray();
+
+        for (int c = 'a'; c <= 'z'; ++c) {
+            g.writeStartObject();
+            for (int ix = 0; ix < 1000; ++ix) {
+                String name = "" + ((char) c) + ix;
+                g.writeNumberField(name, ix);
+            }
+            g.writeEndObject();
+        }
+        g.writeEndArray();
+        g.close();
+        return b.toByteArray();
     }
 
     /*
