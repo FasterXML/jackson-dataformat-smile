@@ -567,6 +567,14 @@ public class SmileGenerator
         _writeByte(TOKEN_LITERAL_START_ARRAY);
     }
 
+    @Override // defined since 2.6.3
+    public final void writeStartArray(int size) throws IOException, JsonGenerationException
+    {
+        _verifyValueWrite("start an array");
+        _writeContext = _writeContext.createChildArrayContext();
+        _writeByte(TOKEN_LITERAL_START_ARRAY);
+    }
+
     @Override
     public final void writeEndArray() throws IOException, JsonGenerationException
     {
