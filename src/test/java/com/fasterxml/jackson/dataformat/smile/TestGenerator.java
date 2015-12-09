@@ -5,6 +5,7 @@ import java.util.HashMap;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
+import com.fasterxml.jackson.core.io.SerializedString;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.smile.SmileConstants;
@@ -188,20 +189,52 @@ public class TestGenerator
         gen.writeEndObject();
 
         gen.close();
+        final byte[] b = out.toByteArray();
 
-        JsonParser p = f.createParser(out.toByteArray());
+        _verifyWithEmpty(f, b, 0); // simple
+        _verifyWithEmpty(f, b, 1); // nextFieldName, any
+        _verifyWithEmpty(f, b, 2); // nextFieldName, mismatch
+        _verifyWithEmpty(f, b, 3); // nextFieldName, match
+    }
+        
+    private void _verifyWithEmpty(SmileFactory f, byte[] b, int mode) throws Exception
+    {
+        // Important: test 3 variants we have for name access:
+        JsonParser p = f.createParser(b);
         assertToken(JsonToken.START_OBJECT, p.nextToken());
-        assertToken(JsonToken.FIELD_NAME, p.nextToken());
-        assertEquals("foo", p.getCurrentName());
+
+        _verifyName(p, mode, "foo");
+
         assertToken(JsonToken.START_OBJECT, p.nextToken());
-        assertToken(JsonToken.FIELD_NAME, p.nextToken());
-        assertEquals("", p.getCurrentName());
+
+        _verifyName(p, mode, "");
+
         assertToken(JsonToken.VALUE_STRING, p.nextToken());
         assertEquals("bar", p.getText());
         assertToken(JsonToken.END_OBJECT, p.nextToken());
         assertToken(JsonToken.END_OBJECT, p.nextToken());
         assertNull(p.nextToken());
         p.close();
+    }
+
+    private void _verifyName(JsonParser p, int mode, String exp) throws Exception
+    {
+        switch (mode) {
+        case 0:
+            assertToken(JsonToken.FIELD_NAME, p.nextToken());
+            break;
+        case 1:
+            String name = p.nextFieldName();
+            assertEquals(exp, name);
+            break;
+        case 2:
+            assertFalse(p.nextFieldName(new SerializedString(exp+"1")));
+            break;
+        default:
+            assertTrue(p.nextFieldName(new SerializedString(exp)));
+        }
+        assertToken(JsonToken.FIELD_NAME, p.getCurrentToken());
+        assertEquals(exp, p.getCurrentName());
     }
     
     /**

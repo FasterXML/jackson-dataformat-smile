@@ -73,12 +73,6 @@ public class TestMapper extends SmileTestBase
         Map<Object,Object> map = new HashMap<Object,Object>();
         map.put("foo", Collections.singletonMap("", "bar"));
         byte[] bytes = MAPPER.writeValueAsBytes(map);
-        /*
-System.err.println("DEBUG: bytes "+bytes.length+":");
-for (int i = 0; i < bytes.length; ++i) {
-    System.err.printf(" #%2d: 0x%x\n", i, bytes[i]);
-}
-*/
         JsonNode n = MAPPER.readTree(new ByteArrayInputStream(bytes));
         assertTrue(n.isObject());
         assertEquals(1, n.size());

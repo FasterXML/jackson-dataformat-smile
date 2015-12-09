@@ -4,6 +4,10 @@ Project: jackson-dataformat-smile
 === Releases ===
 ------------------------------------------------------------------------
 
+2.6.5 (not yet released)
+
+#30: Problem decoding "empty" Map key (String with length 0) with `nextFieldName()`
+
 2.6.4 (07-Dec-2015)
 2.6.3 (12-Oct-2015)
 
