@@ -171,6 +171,39 @@ public class TestGenerator
         assertEquals(21, out.toByteArray().length);
     }
 
+    // [dataformat-smile#30]: problems with empty string key
+    public void testObjectWithEmptyKey() throws Exception
+    {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        SmileFactory f = smileFactory(false, true, false);
+        f.enable(SmileGenerator.Feature.CHECK_SHARED_NAMES);
+        f.enable(SmileGenerator.Feature.CHECK_SHARED_STRING_VALUES);
+        SmileGenerator gen = f.createGenerator(out);
+        gen.writeStartObject();
+        gen.writeFieldName("foo");
+        gen.writeStartObject();
+        gen.writeFieldName("");
+        gen.writeString("bar");
+        gen.writeEndObject();
+        gen.writeEndObject();
+
+        gen.close();
+
+        JsonParser p = f.createParser(out.toByteArray());
+        assertToken(JsonToken.START_OBJECT, p.nextToken());
+        assertToken(JsonToken.FIELD_NAME, p.nextToken());
+        assertEquals("foo", p.getCurrentName());
+        assertToken(JsonToken.START_OBJECT, p.nextToken());
+        assertToken(JsonToken.FIELD_NAME, p.nextToken());
+        assertEquals("", p.getCurrentName());
+        assertToken(JsonToken.VALUE_STRING, p.nextToken());
+        assertEquals("bar", p.getText());
+        assertToken(JsonToken.END_OBJECT, p.nextToken());
+        assertToken(JsonToken.END_OBJECT, p.nextToken());
+        assertNull(p.nextToken());
+        p.close();
+    }
+    
     /**
      * Test to verify that 
      */
@@ -218,7 +251,7 @@ public class TestGenerator
         ObjectMapper mapper = new ObjectMapper(smileFactory);
         File f = File.createTempFile("test", ".tst");
         mapper.writeValue(f, Integer.valueOf(3));
-        
+
         JsonParser jp = smileFactory.createParser(f);
         assertToken(JsonToken.VALUE_NUMBER_INT, jp.nextToken());
         assertEquals(3, jp.getIntValue());
