@@ -22,7 +22,7 @@ No changes since 2.6.0.
 
 - Upgrade to the new symbol table (included in jackson-core 2.6)
 
-2.5.5 (not yet released)
+2.5.5 (07-Dec-2015)
 
 #25: Buffer overrun when trying to write longer binary content
  (report by Lee Y-Y)

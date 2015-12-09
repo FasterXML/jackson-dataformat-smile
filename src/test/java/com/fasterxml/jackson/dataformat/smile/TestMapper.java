@@ -1,11 +1,13 @@
 package com.fasterxml.jackson.dataformat.smile;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.util.UUID;
+import java.util.*;
 
 import org.junit.Assert;
 
 import com.fasterxml.jackson.core.*;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class TestMapper extends SmileTestBase
@@ -65,6 +67,27 @@ public class TestMapper extends SmileTestBase
         assertEquals(16, b.length);
         p.close();
     }
-}
 
+    public void testWithNestedMaps() throws IOException
+    {
+        Map<Object,Object> map = new HashMap<Object,Object>();
+        map.put("foo", Collections.singletonMap("", "bar"));
+        byte[] bytes = MAPPER.writeValueAsBytes(map);
+        /*
+System.err.println("DEBUG: bytes "+bytes.length+":");
+for (int i = 0; i < bytes.length; ++i) {
+    System.err.printf(" #%2d: 0x%x\n", i, bytes[i]);
+}
+*/
+        JsonNode n = MAPPER.readTree(new ByteArrayInputStream(bytes));
+        assertTrue(n.isObject());
+        assertEquals(1, n.size());
+        JsonNode n2 = n.get("foo");
+        assertNotNull(n2);
+        assertEquals(1, n2.size());
+        JsonNode n3 = n2.get("");
+        assertNotNull(n3);
+        assertTrue(n3.isTextual());
+    }
+}
 
