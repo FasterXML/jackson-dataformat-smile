@@ -8,6 +8,11 @@ Project: jackson-dataformat-smile
 
 No changes since 2.6.
 
+2.6.5 (not yet released)
+
+#30: Problem decoding "empty" Map key (String with length 0) with `nextFieldName()`
+
+2.6.4 (07-Dec-2015)
 2.6.3 (12-Oct-2015)
 
 No changes since 2.6.2
@@ -25,7 +30,7 @@ No changes since 2.6.0.
 
 - Upgrade to the new symbol table (included in jackson-core 2.6)
 
-2.5.5 (not yet released)
+2.5.5 (07-Dec-2015)
 
 #25: Buffer overrun when trying to write longer binary content
  (report by Lee Y-Y)

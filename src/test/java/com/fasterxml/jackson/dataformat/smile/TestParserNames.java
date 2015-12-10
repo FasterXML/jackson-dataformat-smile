@@ -9,12 +9,12 @@ public class TestParserNames extends SmileTestBase
 {
     public void testLongNames() throws IOException
     {
-    	_testWithName(generateName(5000));
+        _testWithName(generateName(5000));
     }
     
     public void testJsonBinForLargeObjects() throws Exception
     {
-    	StringBuilder nameBuf = new StringBuilder("longString");
+        StringBuilder nameBuf = new StringBuilder("longString");
 	    int minLength = 9000;
 	    for (int i = 1; nameBuf.length() < minLength; ++i) {
 	    	nameBuf.append("." + i);

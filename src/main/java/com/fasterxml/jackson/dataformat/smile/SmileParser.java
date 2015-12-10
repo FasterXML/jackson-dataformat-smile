@@ -583,7 +583,7 @@ public class SmileParser extends ParserBase
         // also: clear any data retained so far
         _binaryValue = null;
         // Two main modes: values, and field names.
-        if (_currToken != JsonToken.FIELD_NAME && _parsingContext.inObject()) {
+        if ((_currToken != JsonToken.FIELD_NAME) && _parsingContext.inObject()) {
             return (_currToken = _handleFieldName());
         }
         if (_inputPtr >= _inputEnd) {
@@ -937,6 +937,7 @@ public class SmileParser extends ParserBase
                 switch (ch) {
                 case 0x20: // empty String as name, legal if unusual
                     _parsingContext.setCurrentName("");
+                    _currToken = JsonToken.FIELD_NAME;
                     return "";
                 case 0x30: // long shared
                 case 0x31:
