@@ -3,11 +3,11 @@
 This Jackson extension handles reading and writing of data encoded in [Smile](http://wiki.fasterxml.com/SmileFormatSpec) data format ("binary JSON").
 It extends standard Jackson streaming API (`JsonFactory`, `JsonParser`, `JsonGenerator`), and as such works seamlessly with all the higher level data abstractions (data binding, tree model, and pluggable extensions).
 
-[![Build Status](https://fasterxml.ci.cloudbees.com/job/jackson-dataformat-smile-master/badge/icon)](https://fasterxml.ci.cloudbees.com/job/jackson-dataformat-smile-master/)
+[![Build Status](https://travis-ci.org/FasterXML/jackson-dataformat-smile.svg?branch=master)](https://travis-ci.org/FasterXML/jackson-dataformat-smile) [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.fasterxml.jackson.core/jackson-dataformat-smile/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.fasterxml.jackson.core/jackson-dataformat-smile)
 
 ## Status
 
-Module is fully usable, but depends on Jackson 2.0; older 1.x version is still available via Codehaus, and Jackson 1.x Download page.
+Module has been mature since Jackson 1.6.
 
 ## Maven dependency
 
@@ -17,7 +17,7 @@ To use this module on Maven-based projects, use following dependency:
 <dependency>
   <groupId>com.fasterxml.jackson.dataformat</groupId>
   <artifactId>jackson-dataformat-smile</artifactId>
-  <version>2.5.0</version>
+  <version>2.6.4</version>
 </dependency>
 ```
 
@@ -40,3 +40,7 @@ SomeType otherValue = mapper.readValue(smileData, SomeType.class);
 ## Related
 
 * [Smile-format discussion group](https://groups.google.com/forum/#!forum/smile-format-discussion)
+* Non-java Smile codecs (for interoperability):
+    * C: [libsmile](https://github.com/pierre/libsmile) (with wrappers for Ruby, Perl)
+    * Clojure: [Cheshire](https://github.com/dakrone/cheshire)
+    * Python [PySmile](https://github.com/jhosmer/PySmile)
