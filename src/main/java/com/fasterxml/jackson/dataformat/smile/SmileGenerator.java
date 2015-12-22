@@ -24,11 +24,9 @@ public class SmileGenerator
 {
     /**
      * Enumeration that defines all togglable features for Smile generators.
-     *<P>
-     * NOTE: Alas, can not implement <code>com.fasterxml.jackson.databind.cfg.ConfigFeature</code>
-     * since we do not depend on jackson-databind
      */
-    public enum Feature implements FormatFeature
+    public enum Feature
+        implements FormatFeature // since 2.7
     {
         /**
          * Whether to write 4-byte header sequence when starting output or not.
@@ -113,7 +111,7 @@ public class SmileGenerator
 
         @Override public boolean enabledByDefault() { return _defaultState; }
         @Override public int getMask() { return _mask; }
-        @Override public boolean enabledIn(int flags) { return (flags & getMask()) != 0; }    
+        @Override public boolean enabledIn(int flags) { return (flags & _mask) != 0; }    
     }
 
     /**
