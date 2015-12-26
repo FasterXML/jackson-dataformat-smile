@@ -25,7 +25,8 @@ tree model)
   </scm>
 
   <properties>
-    <version.jackson.core>2.7.0-rc2</version.jackson.core>
+    <version.jackson.annotations>2.7.0-rc2</version.jackson.annotations>
+    <version.jackson.core>2.7.0-rc3-SNAPSHOT</version.jackson.core>
     <packageVersion.dir>com/fasterxml/jackson/dataformat/smile</packageVersion.dir>
     <packageVersion.package>${project.groupId}.smile</packageVersion.package>
   </properties>
@@ -48,7 +49,7 @@ tree model)
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-annotations</artifactId>
-      <version>${version.jackson.core}</version>
+      <version>${version.jackson.annotations}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
