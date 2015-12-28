@@ -25,7 +25,7 @@ public class TestFormatDetection extends SmileTestBase
     public void testSimple() throws Exception
     {
         final ObjectMapper mapper = new ObjectMapper();
-        final ObjectReader jsonReader = mapper.reader(POJO.class);
+        final ObjectReader jsonReader = mapper.readerFor(POJO.class);
         final String JSON = "{\"name\":\"Bob\", \"id\":3}";
 
         byte[] doc = _smileDoc(JSON, true);
