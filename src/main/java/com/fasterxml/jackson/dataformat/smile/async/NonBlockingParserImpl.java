@@ -2030,7 +2030,7 @@ public class NonBlockingParserImpl
                         msg = "Input does not start with Smile format header (first byte = 0x"
                         +Integer.toHexString(b & 0xFF)+") and parser has REQUIRE_HEADER enabled: can not parse";
                     }
-                    throw new JsonParseException(msg, JsonLocation.NA);
+                    throw new JsonParseException(this, msg);
                 }
             }
             // otherwise, fall through, with byte (_handleHeader has set _state)
