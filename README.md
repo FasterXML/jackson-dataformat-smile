@@ -3,7 +3,9 @@
 This Jackson extension handles reading and writing of data encoded in [Smile](http://wiki.fasterxml.com/SmileFormatSpec) data format ("binary JSON").
 It extends standard Jackson streaming API (`JsonFactory`, `JsonParser`, `JsonGenerator`), and as such works seamlessly with all the higher level data abstractions (data binding, tree model, and pluggable extensions).
 
-[![Build Status](https://travis-ci.org/FasterXML/jackson-dataformat-smile.svg?branch=master)](https://travis-ci.org/FasterXML/jackson-dataformat-smile) [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.fasterxml.jackson.core/jackson-dataformat-smile/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.fasterxml.jackson.core/jackson-dataformat-smile)
+[![Build Status](https://travis-ci.org/FasterXML/jackson-dataformat-smile.svg?branch=master)](https://travis-ci.org/FasterXML/jackson-dataformat-smile)
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.fasterxml.jackson.dataformat/jackson-dataformat-smile/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.fasterxml.jackson.dataformat/jackson-dataformat-smile/)
+[![Javadoc](https://javadoc-emblem.rhcloud.com/doc/com.fasterxml.jackson.dataformat/jackson-dataformat-smile/badge.svg)](http://www.javadoc.io/doc/com.fasterxml.jackson.dataformat/jackson-dataformat-smile)
 
 ## Status
 
