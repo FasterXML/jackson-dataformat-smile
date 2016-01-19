@@ -25,7 +25,7 @@ tree model)
   </scm>
 
   <properties>
-    <version.jackson.core>2.6.4</version.jackson.core>
+    <version.jackson.core>2.6.5</version.jackson.core>
     <packageVersion.dir>com/fasterxml/jackson/dataformat/smile</packageVersion.dir>
     <packageVersion.package>${project.groupId}.smile</packageVersion.package>
     <osgi.export>${project.groupId}.smile.*;version=${project.version}
