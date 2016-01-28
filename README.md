@@ -19,7 +19,7 @@ To use this module on Maven-based projects, use following dependency:
 <dependency>
   <groupId>com.fasterxml.jackson.dataformat</groupId>
   <artifactId>jackson-dataformat-smile</artifactId>
-  <version>2.6.4</version>
+  <version>2.7.0</version>
 </dependency>
 ```
 
@@ -45,4 +45,5 @@ SomeType otherValue = mapper.readValue(smileData, SomeType.class);
 * Non-java Smile codecs (for interoperability):
     * C: [libsmile](https://github.com/pierre/libsmile) (with wrappers for Ruby, Perl)
     * Clojure: [Cheshire](https://github.com/dakrone/cheshire)
+    * Javascript: [smile-js](https://github.com/ngyewch/smile-js)
     * Python [PySmile](https://github.com/jhosmer/PySmile)

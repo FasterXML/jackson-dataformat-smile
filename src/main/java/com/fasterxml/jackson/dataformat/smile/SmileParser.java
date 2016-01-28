@@ -60,7 +60,7 @@ public class SmileParser extends ParserBase
     private final static int[] NO_INTS = new int[0];
 
     private final static String[] NO_STRINGS = new String[0];
-    
+
     /*
     /**********************************************************
     /* Configuration
