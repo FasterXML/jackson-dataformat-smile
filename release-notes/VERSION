@@ -6,6 +6,9 @@ Project: jackson-dataformat-smile
 
 2.7.2 (not yet released)
 
+#34: Deserialize error "Invalid type marker byte" for 'long' field names
+  (57 characters or longer)
+ (reported by georgewfraser@github)
 - Change build to produce JDK6-compatible jar, to allow use on JDK6 runtime
 
 2.7.1 (02-Feb-2016)

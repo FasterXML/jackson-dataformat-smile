@@ -20,8 +20,7 @@ public final class SmileConstants
     public final static int MAX_SHORT_VALUE_STRING_BYTES = 64;
 
     /**
-     * Encoding has special "short" forms for field names that can
-     * be represented by 64 bytes of UTF-8 or less.
+     * Maximum byte length for short ASCII names is 64.
      */
     public final static int MAX_SHORT_NAME_ASCII_BYTES = 64;
 
@@ -31,6 +30,12 @@ public final class SmileConstants
      * we get one more as values 0 and 1 are not valid)
      */
     public final static int MAX_SHORT_NAME_UNICODE_BYTES = 56;
+
+    /**
+     * Regardless of ASCII/non-ASCII aspect, maximum byte length for any
+     * short name is then 64 bytes.
+     */
+    public final static int MAX_SHORT_NAME_ANY_BYTES = 64;
     
     /**
      * Longest back reference we use for field names is 10 bits; no point
