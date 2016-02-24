@@ -958,6 +958,7 @@ public class SmileParser extends ParserBase
                     }
                 case 0x34: // long ASCII/Unicode name
                     _handleLongFieldName();
+                    _currToken = JsonToken.FIELD_NAME;
                     return getCurrentName();
                 }
                 break;

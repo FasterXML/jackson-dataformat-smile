@@ -618,7 +618,7 @@ public class SmileGenerator
                 return;
             }
         }
-        if (len > MAX_SHORT_NAME_UNICODE_BYTES) { // can not be a 'short' String; off-line (rare case)
+        if (len > MAX_SHORT_NAME_ANY_BYTES) { // can not be a 'short' String; off-line (rare case)
             _writeNonShortFieldName(name, len);
             return;
         }
@@ -683,8 +683,7 @@ public class SmileGenerator
         _outputBuffer[_outputTail++] = BYTE_MARKER_END_OF_STRING;                
     }
     
-    protected final void _writeFieldName(SerializableString name)
-        throws IOException, JsonGenerationException
+    protected final void _writeFieldName(SerializableString name) throws IOException
     {
         final int charLen = name.charLength();
         if (charLen == 0) {

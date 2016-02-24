@@ -18,5 +18,10 @@ Lee Yun-young (lseeker@github)
    (2.4.7 / 2.5.5)
 
 mcmahon356@github:
-  * Reported 24: Current location does not always updated properly
+  * Reported #24: Current location does not always updated properly
    (2.5.1)
+
+georgewfraser@githubL
+  * Reported #34: Deserialize error "Invalid type marker byte" for 'long' field names
+    (57 characters or longer)
+   (2.6.6 / 2.7.2)

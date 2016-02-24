@@ -4,6 +4,11 @@ Project: jackson-dataformat-smile
 === Releases ===
 ------------------------------------------------------------------------
 
+2.6.6 (not yet released)
+
+#34: Deserialize error "Invalid type marker byte" for 'long' field names (57 characters or longer)
+ (reported by georgewfraser@github)
+
 2.6.5 (19-Jan-2016)
 
 #30: Problem decoding "empty" Map key (String with length 0) with `nextFieldName()`
