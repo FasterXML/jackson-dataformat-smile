@@ -4,9 +4,9 @@ import java.io.*;
 import java.util.*;
 
 import com.fasterxml.jackson.core.*;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.core.sym.ByteQuadsCanonicalizer;
-
 import com.fasterxml.jackson.dataformat.smile.SmileFactory;
 import com.fasterxml.jackson.dataformat.smile.SmileGenerator;
 import com.fasterxml.jackson.dataformat.smile.SmileParser;
@@ -82,7 +82,7 @@ public class TestParserSymbolHandling
     public void testSimple() throws IOException
     {
         final String STR1 = "a";
-		
+
         byte[] data = _smileDoc("{ "+quote(STR1)+":1, \"foobar\":2, \"longername\":3 }");
         SmileFactory f = new SmileFactory();
         SmileParser p = _smileParser(f, data);
@@ -516,7 +516,46 @@ public class TestParserSymbolHandling
 
         parser.close();
     }
-    
+
+    public void testCorruptName34() throws Exception
+    {
+        SmileFactory factory = new SmileFactory();
+        // 65 chars/bytes, and not one less, to trigger it
+        final String NAME = "Something else that's long enough (65 char) to cause fail: 123456";
+        ByteArrayOutputStream bout = new ByteArrayOutputStream();
+        SmileGenerator gen = factory.createGenerator(bout);
+        gen.writeStartArray();
+        gen.writeStartObject();
+        gen.writeNullField(NAME);
+        gen.writeEndObject();
+        gen.writeEndArray();
+        gen.close();
+        
+        byte[] data = bout.toByteArray();
+
+        // 23-Feb-2016, tatu: [dataformat-smile#34] is very particular and only affects
+        //   particular call path, triggered by call to read JsonNode
+
+        JsonNode n = smileMapper().readTree(data);
+        assertNotNull(n);
+
+        /*
+        JsonParser parser = factory.createParser(data);
+        assertToken(JsonToken.START_ARRAY, parser.nextToken());
+        assertToken(JsonToken.START_OBJECT, parser.nextToken());
+        assertEquals(JsonTokenId.ID_START_OBJECT, parser.getCurrentTokenId());
+
+        assertToken(JsonToken.FIELD_NAME, parser.nextToken());
+        assertEquals(JsonTokenId.ID_FIELD_NAME, parser.getCurrentTokenId());
+        assertEquals(NAME, parser.getCurrentName());
+
+        assertToken(JsonToken.VALUE_NULL, parser.nextToken());
+        assertToken(JsonToken.END_OBJECT, parser.nextToken());
+        assertToken(JsonToken.END_ARRAY, parser.nextToken());
+        parser.close();
+        */
+    }
+
     /*
     /**********************************************************
     /* Helper methods
