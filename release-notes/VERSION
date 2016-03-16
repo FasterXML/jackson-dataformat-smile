@@ -4,6 +4,10 @@ Project: jackson-dataformat-smile
 === Releases ===
 ------------------------------------------------------------------------
 
+2.7.3 (16-Mar-2015)
+
+No changes since 2.7.2
+
 2.7.2 (27-Feb-2016)
 
 #34: Deserialize error "Invalid type marker byte" for 'long' field names
