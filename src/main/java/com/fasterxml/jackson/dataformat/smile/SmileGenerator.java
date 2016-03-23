@@ -461,7 +461,7 @@ public class SmileGenerator
      */
 
     @Override
-    public final void writeFieldName(String name)  throws IOException, JsonGenerationException
+    public final void writeFieldName(String name)  throws IOException
     {
         if (_writeContext.writeFieldName(name) == JsonWriteContext.STATUS_EXPECT_VALUE) {
             _reportError("Can not write a field name, expecting a value");
@@ -471,7 +471,7 @@ public class SmileGenerator
 
     @Override
     public final void writeFieldName(SerializableString name)
-        throws IOException, JsonGenerationException
+        throws IOException
     {
         // Object is a value, need to verify it's allowed
         if (_writeContext.writeFieldName(name.getValue()) == JsonWriteContext.STATUS_EXPECT_VALUE) {
@@ -482,7 +482,7 @@ public class SmileGenerator
 
     @Override
     public final void writeStringField(String fieldName, String value)
-        throws IOException, JsonGenerationException
+        throws IOException
     {
         if (_writeContext.writeFieldName(fieldName) == JsonWriteContext.STATUS_EXPECT_VALUE) {
             _reportError("Can not write a field name, expecting a value");
@@ -532,7 +532,7 @@ public class SmileGenerator
      *<p>
      * NOTE: only use this method if you really know what you are doing.
      */
-    public void writeRaw(byte b) throws IOException, JsonGenerationException
+    public void writeRaw(byte b) throws IOException
     {
         /* 08-Jan-2014, tatu: Should we just rather throw an exception? For now,
          *   allow... maybe have a feature to cause an exception.
@@ -558,7 +558,7 @@ public class SmileGenerator
      */
 
     @Override
-    public final void writeStartArray() throws IOException, JsonGenerationException
+    public final void writeStartArray() throws IOException
     {
         _verifyValueWrite("start an array");
         _writeContext = _writeContext.createChildArrayContext();
@@ -566,7 +566,7 @@ public class SmileGenerator
     }
 
     @Override // defined since 2.6.3
-    public final void writeStartArray(int size) throws IOException, JsonGenerationException
+    public final void writeStartArray(int size) throws IOException
     {
         _verifyValueWrite("start an array");
         _writeContext = _writeContext.createChildArrayContext();
@@ -574,7 +574,7 @@ public class SmileGenerator
     }
 
     @Override
-    public final void writeEndArray() throws IOException, JsonGenerationException
+    public final void writeEndArray() throws IOException
     {
         if (!_writeContext.inArray()) {
             _reportError("Current context not an ARRAY but "+_writeContext.getTypeDesc());
@@ -584,15 +584,27 @@ public class SmileGenerator
     }
 
     @Override
-    public final void writeStartObject() throws IOException, JsonGenerationException
+    public final void writeStartObject() throws IOException
     {
         _verifyValueWrite("start an object");
         _writeContext = _writeContext.createChildObjectContext();
         _writeByte(TOKEN_LITERAL_START_OBJECT);
     }
 
+    @Override // since 2.8
+    public final void writeStartObject(Object forValue) throws IOException
+    {
+        _verifyValueWrite("start an object");
+        JsonWriteContext ctxt = _writeContext.createChildObjectContext();
+        _writeContext = ctxt;
+        if (forValue != null) {
+            ctxt.setCurrentValue(forValue);
+        }
+        _writeByte(TOKEN_LITERAL_START_OBJECT);
+    }
+    
     @Override
-    public final void writeEndObject() throws IOException, JsonGenerationException
+    public final void writeEndObject() throws IOException
     {
         if (!_writeContext.inObject()) {
             _reportError("Current context not an object but "+_writeContext.getTypeDesc());
@@ -721,7 +733,7 @@ public class SmileGenerator
     }
 
     private final void _writeLongAsciiFieldName(byte[] bytes)
-        throws IOException, JsonGenerationException
+        throws IOException
     {
         final int byteLen = bytes.length;
         if (_outputTail >= _outputEnd) {
@@ -923,7 +935,7 @@ public class SmileGenerator
     }
     
     @Override
-    public void writeString(char[] text, int offset, int len) throws IOException, JsonGenerationException
+    public void writeString(char[] text, int offset, int len) throws IOException
     {
         // Shared strings are tricky; easiest to just construct String, call the other method
         if (len <= MAX_SHARED_STRING_LENGTH_BYTES && _seenStringValueCount >= 0 && len > 0) {
@@ -982,7 +994,7 @@ public class SmileGenerator
 
     @Override
     public final void writeString(SerializableString sstr)
-        throws IOException, JsonGenerationException
+        throws IOException
     {
         _verifyValueWrite("write String value");
         // First: is it empty?
@@ -1033,7 +1045,7 @@ public class SmileGenerator
 
     @Override
     public void writeRawUTF8String(byte[] text, int offset, int len)
-        throws IOException, JsonGenerationException
+        throws IOException
     {
         _verifyValueWrite("write String value");
         // first: is it empty String?
@@ -1086,7 +1098,7 @@ public class SmileGenerator
 
     @Override
     public final void writeUTF8String(byte[] text, int offset, int len)
-        throws IOException, JsonGenerationException
+        throws IOException
     {
         // Since no escaping is needed, same as 'writeRawUTF8String'
         writeRawUTF8String(text, offset, len);
@@ -1099,37 +1111,37 @@ public class SmileGenerator
      */
 
     @Override
-    public void writeRaw(String text) throws IOException, JsonGenerationException {
+    public void writeRaw(String text) throws IOException {
         throw _notSupported();
     }
 
     @Override
-    public void writeRaw(String text, int offset, int len) throws IOException, JsonGenerationException {
+    public void writeRaw(String text, int offset, int len) throws IOException {
         throw _notSupported();
     }
 
     @Override
-    public void writeRaw(char[] text, int offset, int len) throws IOException, JsonGenerationException {
+    public void writeRaw(char[] text, int offset, int len) throws IOException {
         throw _notSupported();
     }
 
     @Override
-    public void writeRaw(char c) throws IOException, JsonGenerationException {
+    public void writeRaw(char c) throws IOException {
         throw _notSupported();
     }
 
     @Override
-    public void writeRawValue(String text) throws IOException, JsonGenerationException {
+    public void writeRawValue(String text) throws IOException {
         throw _notSupported();
     }
 
     @Override
-    public void writeRawValue(String text, int offset, int len) throws IOException, JsonGenerationException {
+    public void writeRawValue(String text, int offset, int len) throws IOException {
         throw _notSupported();
     }
 
     @Override
-    public void writeRawValue(char[] text, int offset, int len) throws IOException, JsonGenerationException {
+    public void writeRawValue(char[] text, int offset, int len) throws IOException {
         throw _notSupported();
     }
     
@@ -1140,7 +1152,7 @@ public class SmileGenerator
      */
 
     @Override
-    public void writeBinary(Base64Variant b64variant, byte[] data, int offset, int len) throws IOException, JsonGenerationException
+    public void writeBinary(Base64Variant b64variant, byte[] data, int offset, int len) throws IOException
     {
         if (data == null) {
             writeNull();
@@ -1160,7 +1172,7 @@ public class SmileGenerator
 
     @Override
     public int writeBinary(InputStream data, int dataLength)
-        throws IOException, JsonGenerationException
+        throws IOException
     {
         // Smile requires knowledge of length in advance, since binary is length-prefixed
         if (dataLength < 0) {
@@ -1190,7 +1202,7 @@ public class SmileGenerator
     
     @Override
     public int writeBinary(Base64Variant b64variant, InputStream data, int dataLength)
-        throws IOException, JsonGenerationException
+        throws IOException
     {
         return writeBinary(data, dataLength);
     }
@@ -1202,7 +1214,7 @@ public class SmileGenerator
      */
 
     @Override
-    public void writeBoolean(boolean state) throws IOException, JsonGenerationException
+    public void writeBoolean(boolean state) throws IOException
     {
         _verifyValueWrite("write boolean value");
         if (state) {
@@ -1213,14 +1225,14 @@ public class SmileGenerator
     }
 
     @Override
-    public void writeNull() throws IOException, JsonGenerationException
+    public void writeNull() throws IOException
     {
         _verifyValueWrite("write null value");
         _writeByte(TOKEN_LITERAL_NULL);
     }
 
     @Override
-    public void writeNumber(int i) throws IOException, JsonGenerationException
+    public void writeNumber(int i) throws IOException
     {
         _verifyValueWrite("write number");
     	// First things first: let's zigzag encode number
@@ -1260,7 +1272,7 @@ public class SmileGenerator
     }
 
     @Override
-    public void writeNumber(long l) throws IOException, JsonGenerationException
+    public void writeNumber(long l) throws IOException
     {
         // First: maybe 32 bits is enough?
     	if (l <= MAX_INT_AS_LONG && l >= MIN_INT_AS_LONG) {
@@ -1323,7 +1335,7 @@ public class SmileGenerator
     }
 
     @Override
-    public void writeNumber(BigInteger v) throws IOException, JsonGenerationException
+    public void writeNumber(BigInteger v) throws IOException
     {
         if (v == null) {
             writeNull();
@@ -1337,7 +1349,7 @@ public class SmileGenerator
     }
     
     @Override
-    public void writeNumber(double d) throws IOException, JsonGenerationException
+    public void writeNumber(double d) throws IOException
     {
         // Ok, now, we needed token type byte plus 10 data bytes (7 bits each)
         _ensureRoomForOutput(11);
@@ -1379,7 +1391,7 @@ public class SmileGenerator
     }
 
     @Override
-    public void writeNumber(float f) throws IOException, JsonGenerationException
+    public void writeNumber(float f) throws IOException
     {
         // Ok, now, we needed token type byte plus 5 data bytes (7 bits each)
         _ensureRoomForOutput(6);
@@ -1405,7 +1417,7 @@ public class SmileGenerator
     }
 
     @Override
-    public void writeNumber(BigDecimal dec) throws IOException, JsonGenerationException
+    public void writeNumber(BigDecimal dec) throws IOException
     {
         if (dec == null) {
             writeNull();
@@ -1466,7 +1478,7 @@ public class SmileGenerator
             }
         } catch (NumberFormatException e) {
             throw new JsonGenerationException("Invalid String representation for Number ('"+enc
-                    +"'); can not write using Smile format");
+                    +"'); can not write using Smile format", this);
         }
     }
 
@@ -1476,7 +1488,7 @@ public class SmileGenerator
             writeNumber(new BigDecimal(enc));
         } catch (NumberFormatException e) {
             throw new JsonGenerationException("Invalid String representation for Number ('"+enc
-                    +"'); can not write using Smile format");
+                    +"'); can not write using Smile format", this);
         }
     }
     
@@ -1488,7 +1500,7 @@ public class SmileGenerator
     
     @Override
     protected final void _verifyValueWrite(String typeMsg)
-        throws IOException, JsonGenerationException
+        throws IOException
     {
         int status = _writeContext.writeValue();
         if (status == JsonWriteContext.STATUS_EXPECT_NAME) {

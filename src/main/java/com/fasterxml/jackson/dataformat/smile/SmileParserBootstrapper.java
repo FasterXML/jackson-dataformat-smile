@@ -130,7 +130,7 @@ public class SmileParserBootstrapper
                 msg = "Input does not start with Smile format header (first byte = 0x"
                 +Integer.toHexString(firstByte & 0xFF)+") and parser has REQUIRE_HEADER enabled: can not parse";
             }
-            throw new JsonParseException(msg, JsonLocation.NA);
+            throw new JsonParseException(p, msg);
         }
         return p;
     }
