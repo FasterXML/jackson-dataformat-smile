@@ -12,7 +12,6 @@ import com.fasterxml.jackson.dataformat.smile.SmileParser;
 
 public class TestSmileDetection extends SmileTestBase
 {
-    
     public void testSimpleObjectWithHeader() throws IOException
     {
         SmileFactory f = new SmileFactory();
