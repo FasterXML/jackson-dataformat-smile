@@ -4,6 +4,10 @@ Project: jackson-dataformat-smile
 === Releases ===
 ------------------------------------------------------------------------
 
+-- DEPRECATED -- 
+
+(moved to be part of `jackson-dataformats-binary`)
+
 2.7.5 (not yet releaed)
 2.7.4 (29-Apr-2016)
 2.7.3 (16-Mar-2015)
