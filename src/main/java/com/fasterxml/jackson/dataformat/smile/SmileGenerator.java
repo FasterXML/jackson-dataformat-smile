@@ -1530,7 +1530,13 @@ public class SmileGenerator
         if (_outputBuffer != null
             && isEnabled(JsonGenerator.Feature.AUTO_CLOSE_JSON_CONTENT)) {
             while (true) {
-                JsonStreamContext ctxt = getOutputContext();
+                /* 28-May-2016, tatu: To work around incompatibility introduced by
+                 *     `jackson-core` 2.8 where return type of `getOutputContext()`
+                 *     changed, let's do direct access here. Not a good idea generally,
+                 *     but where saves us from some binary incompatibility.
+                 */
+//                JsonStreamContext ctxt = getOutputContext();
+                JsonStreamContext ctxt = _writeContext;
                 if (ctxt.inArray()) {
                     writeEndArray();
                 } else if (ctxt.inObject()) {
